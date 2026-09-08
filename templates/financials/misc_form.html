@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if expense %}Edit Expense{% else %}Add Miscellaneous Expense{% endif %} - BuildCore Infrastructure
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% if expense %}Edit Expense{% else %}Add Miscellaneous Expense{% endif %}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('financials.project_dashboard', project_id=project.project_id) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to {{ project.project_name }} Financials
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm" style="max-width: 700px; margin: 0 auto;">
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label for="expense_type" class="form-label">Expense Type / Category</label>
+                <select class="form-select" id="expense_type" name="expense_type" required>
+                    <option value="">-- Select Type --</option>
+                    {% set types = ['Building Permit', 'Legal Fees', 'Safety Testing', 'Insurance', 'Security', 'Utilities', 'Transportation', 'Site Fines', 'Other'] %}
+                    {% for t in types %}
+                    <option value="{{ t }}" {% if expense and expense.expense_type == t %}selected{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="amount" class="form-label">Amount (₹)</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="amount" name="amount" 
+                           value="{{ expense.amount if expense else '' }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="expense_date" class="form-label">Expense Date</label>
+                    <input type="date" class="form-control" id="expense_date" name="expense_date" 
+                           value="{{ expense.expense_date if expense else '' }}" required>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label for="description" class="form-label">Description (optional)</label>
+                <textarea class="form-control" id="description" name="description" rows="3">{{ expense.description if expense else '' }}</textarea>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">
+                    {% if expense %}Update Expense{% else %}Save Expense{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

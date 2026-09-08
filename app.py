@@ -123,6 +123,9 @@ def create_app():
     
     from routes.purchases import purchases_bp
     app.register_blueprint(purchases_bp)
+    
+    from routes.financials import financials_bp
+    app.register_blueprint(financials_bp)
 
     return app
 

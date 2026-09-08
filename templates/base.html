@@ -90,7 +90,7 @@
                             <a class="nav-link {% if request.endpoint and request.endpoint.startswith('purchases.') %}active{% endif %}" href="{{ url_for('purchases.list_purchases') }}">Purchases</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">Expenses</a>
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('financials.') %}active{% endif %}" href="{{ url_for('financials.list_financials') }}">Financials</a>
                         </li>
                         <li class="nav-item mt-4">
                             <a class="nav-link text-warning" href="#">Reports</a>

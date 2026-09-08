@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Financials — {{ project.project_name }} - BuildCore Infrastructure{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Financials: {{ project.project_name }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('projects.view_project', project_id=project.project_id) }}" class="btn btn-sm btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Back to Project
+        </a>
+        <a href="{{ url_for('financials.add_misc_expense', project_id=project.project_id) }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-lg"></i> Add Misc Expense
+        </a>
+    </div>
+</div>
+
+<!-- ─── Summary Cards ─── -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm text-center h-100">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase mb-2">Total Budget</h6>
+                <h3 class="fw-bold">₹{{ project.budget | inr }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm text-center h-100">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase mb-2">Total Cost</h6>
+                <h3 class="fw-bold text-primary">₹{{ total_cost | inr }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm text-center h-100">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase mb-2">Remaining Budget</h6>
+                <h3 class="fw-bold {% if remaining < 0 %}text-danger{% else %}text-success{% endif %}">
+                    ₹{{ remaining | inr }}
+                </h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── Budget Progress Bar ─── -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between mb-1">
+            <small class="text-muted">Budget Utilization</small>
+            <small class="fw-bold">{{ "{:.1f}".format(budget_used_pct) }}%</small>
+        </div>
+        <div class="progress" style="height: 28px;">
+            <div class="progress-bar {% if budget_used_pct > 90 %}bg-danger{% elif budget_used_pct > 70 %}bg-warning{% else %}bg-success{% endif %}"
+                 role="progressbar" style="width: {{ [budget_used_pct, 100] | min }}%;"
+                 aria-valuenow="{{ budget_used_pct }}" aria-valuemin="0" aria-valuemax="100">
+                {{ "{:.1f}".format(budget_used_pct) }}%
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── Category Breakdown Cards ─── -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm h-100 border-start border-4 border-info">
+            <div class="card-body text-center">
+                <h6 class="text-muted text-uppercase mb-2"><i class="bi bi-box-seam"></i> Materials</h6>
+                <h4 class="fw-bold">₹{{ categories.Materials | inr }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm h-100 border-start border-4 border-warning">
+            <div class="card-body text-center">
+                <h6 class="text-muted text-uppercase mb-2"><i class="bi bi-people"></i> Labour</h6>
+                <h4 class="fw-bold">₹{{ categories.Labour | inr }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm h-100 border-start border-4 border-danger">
+            <div class="card-body text-center">
+                <h6 class="text-muted text-uppercase mb-2"><i class="bi bi-gear"></i> Equipment</h6>
+                <h4 class="fw-bold">₹{{ categories.Equipment | inr }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm h-100 border-start border-4 border-secondary">
+            <div class="card-body text-center">
+                <h6 class="text-muted text-uppercase mb-2"><i class="bi bi-receipt"></i> Other</h6>
+                <h4 class="fw-bold">₹{{ categories.Other | inr }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── Cost Breakdown Chart ─── -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Cost Breakdown</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="costChart" style="max-height: 320px;"></canvas>
+    </div>
+</div>
+
+<!-- ─── Transaction Ledger ─── -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Financial Transactions</h5>
+        <div>
+            <a href="{{ url_for('financials.project_dashboard', project_id=project.project_id, category='All') }}" 
+               class="btn btn-sm {% if filter_category == 'All' %}btn-primary{% else %}btn-outline-secondary{% endif %}">All</a>
+            <a href="{{ url_for('financials.project_dashboard', project_id=project.project_id, category='Materials') }}" 
+               class="btn btn-sm {% if filter_category == 'Materials' %}btn-info{% else %}btn-outline-secondary{% endif %}">Materials</a>
+            <a href="{{ url_for('financials.project_dashboard', project_id=project.project_id, category='Labour') }}" 
+               class="btn btn-sm {% if filter_category == 'Labour' %}btn-warning{% else %}btn-outline-secondary{% endif %}">Labour</a>
+            <a href="{{ url_for('financials.project_dashboard', project_id=project.project_id, category='Equipment') }}" 
+               class="btn btn-sm {% if filter_category == 'Equipment' %}btn-danger{% else %}btn-outline-secondary{% endif %}">Equipment</a>
+            <a href="{{ url_for('financials.project_dashboard', project_id=project.project_id, category='Other') }}" 
+               class="btn btn-sm {% if filter_category == 'Other' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Other</a>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if ledger %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Source</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for txn in ledger %}
+                    <tr>
+                        <td>{{ txn.transaction_date.strftime('%d %b %Y') if txn.transaction_date else '' }}</td>
+                        <td>
+                            <span class="badge {% if txn.category == 'Materials' %}bg-info{% elif txn.category == 'Labour' %}bg-warning text-dark{% elif txn.category == 'Equipment' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                {{ txn.category }}
+                            </span>
+                        </td>
+                        <td>{{ txn.description }}</td>
+                        <td class="fw-bold">₹{{ txn.amount | inr }}</td>
+                        <td><small class="text-muted">{{ txn.source_type }}</small></td>
+                        <td>
+                            {% if txn.category == 'Other' %}
+                            <a href="{{ url_for('financials.edit_misc_expense', expense_id=txn.source_id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            <form action="{{ url_for('financials.delete_misc_expense', expense_id=txn.source_id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this expense?');">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <small class="text-muted">Auto</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0 text-center py-4">No financial transactions recorded for this project yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Chart.js for the doughnut chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+    const ctx = document.getElementById('costChart').getContext('2d');
+    const data = {
+        labels: ['Materials', 'Labour', 'Equipment', 'Other'],
+        datasets: [{
+            data: [
+                {{ categories.Materials }},
+                {{ categories.Labour }},
+                {{ categories.Equipment }},
+                {{ categories.Other }}
+            ],
+            backgroundColor: [
+                '#0dcaf0',   // info / Materials
+                '#ffc107',   // warning / Labour
+                '#dc3545',   // danger / Equipment
+                '#6c757d'    // secondary / Other
+            ],
+            borderWidth: 2,
+            hoverOffset: 10
+        }]
+    };
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { padding: 20, font: { size: 14 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let val = context.parsed;
+                            // Format as INR
+                            return context.label + ': ₹' + val.toLocaleString('en-IN', {minimumFractionDigits: 2});
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

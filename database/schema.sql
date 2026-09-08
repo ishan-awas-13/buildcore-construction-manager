@@ -1,3 +1,4 @@
+DROP VIEW IF EXISTS expense_ledger_view CASCADE;
 DROP VIEW IF EXISTS equipment_status_view CASCADE;
 DROP VIEW IF EXISTS worker_status_view CASCADE;
 DROP VIEW IF EXISTS project_progress_view CASCADE;
@@ -229,3 +230,73 @@ SELECT e.*,
         ELSE 'Available'
     END AS computed_status
 FROM equipment e;
+
+-- Unified Financial Ledger View
+-- Consolidates all 4 cost categories into a single queryable view.
+-- Material cost = purchase_items (quantity * unit_price)
+-- Labour cost = task_workers (assigned_hours / 8) * worker daily_rate
+-- Equipment cost = equipment_assignments hours_used * equipment hourly_rate
+-- Other cost = expenses table (misc/manual entries)
+CREATE VIEW expense_ledger_view AS
+
+-- MATERIALS: Cost comes from actual purchase line items
+SELECT
+    'MAT-' || pi.purchase_item_id AS transaction_id,
+    p.project_id,
+    p.purchase_date AS transaction_date,
+    'Materials' AS category,
+    m.material_name || ' — ' || pi.quantity || ' ' || m.unit || ' @ ₹' || pi.unit_price AS description,
+    (pi.quantity * pi.unit_price) AS amount,
+    'Purchase' AS source_type,
+    p.purchase_id AS source_id
+FROM purchase_items pi
+JOIN purchases p ON pi.purchase_id = p.purchase_id
+JOIN materials m ON pi.material_id = m.material_id
+
+UNION ALL
+
+-- LABOUR: Cost = (assigned_hours / 8) * daily_rate
+SELECT
+    'LAB-' || tw.task_worker_id AS transaction_id,
+    pt.project_id,
+    pt.start_date AS transaction_date,
+    'Labour' AS category,
+    w.name || ' — ' || tt.task_name || ' (' || tw.assigned_hours || ' hrs)' AS description,
+    ROUND((tw.assigned_hours / 8.0) * w.daily_rate, 2) AS amount,
+    'Labour' AS source_type,
+    tw.task_worker_id AS source_id
+FROM task_workers tw
+JOIN workers w ON tw.worker_id = w.worker_id
+JOIN project_tasks pt ON tw.project_task_id = pt.project_task_id
+JOIN task_types tt ON pt.task_type_id = tt.task_type_id
+
+UNION ALL
+
+-- EQUIPMENT: Cost = hours_used * hourly_rate
+SELECT
+    'EQP-' || ea.assignment_id AS transaction_id,
+    pt.project_id,
+    ea.start_date AS transaction_date,
+    'Equipment' AS category,
+    eq.equipment_name || ' — ' || tt.task_name || ' (' || ea.hours_used || ' hrs)' AS description,
+    ROUND(ea.hours_used * eq.hourly_rate, 2) AS amount,
+    'Equipment' AS source_type,
+    ea.assignment_id AS source_id
+FROM equipment_assignments ea
+JOIN equipment eq ON ea.equipment_id = eq.equipment_id
+JOIN project_tasks pt ON ea.project_task_id = pt.project_task_id
+JOIN task_types tt ON pt.task_type_id = tt.task_type_id
+
+UNION ALL
+
+-- OTHER / MISCELLANEOUS: Direct from expenses table
+SELECT
+    'MISC-' || e.expense_id AS transaction_id,
+    e.project_id,
+    e.expense_date AS transaction_date,
+    'Other' AS category,
+    e.expense_type || ' — ' || COALESCE(e.description, '') AS description,
+    e.amount,
+    'Misc Expense' AS source_type,
+    e.expense_id AS source_id
+FROM expenses e;
