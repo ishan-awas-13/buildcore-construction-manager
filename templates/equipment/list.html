@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Equipment - BuildCore Infrastructure{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Equipment</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('equipment.add_equipment') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-circle"></i> Add New Equipment
+        </a>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Hourly Rate</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for eq in equipment %}
+            <tr>
+                <td>{{ eq.equipment_id }}</td>
+                <td><strong>{{ eq.equipment_name }}</strong></td>
+                <td>{{ eq.equipment_type }}</td>
+                <td>₹{{ eq.hourly_rate | inr }}</td>
+                <td>
+                    <span class="badge {% if eq.status == 'Available' %}bg-success{% elif eq.status == 'In Use' %}bg-primary{% elif eq.status == 'Maintenance' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                        {{ eq.status }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{{ url_for('equipment.view_equipment', equipment_id=eq.equipment_id) }}" class="btn btn-sm btn-outline-info">View</a>
+                    <a href="{{ url_for('equipment.edit_equipment', equipment_id=eq.equipment_id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center">No equipment found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

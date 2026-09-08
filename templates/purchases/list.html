@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Purchases - BuildCore Infrastructure{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Purchase Orders</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('purchases.add_purchase') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-lg"></i> Create Purchase Order
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Date</th>
+                        <th>Supplier</th>
+                        <th>Project</th>
+                        <th>Status</th>
+                        <th>Total Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in purchases %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('purchases.view_purchase', purchase_id=p.purchase_id) }}" class="fw-bold text-decoration-none">
+                                PO-{{ p.purchase_id }}
+                            </a>
+                        </td>
+                        <td>{{ p.purchase_date.strftime('%d %b %Y') if p.purchase_date else '' }}</td>
+                        <td>{{ p.supplier_name }}</td>
+                        <td>{{ p.project_name }}</td>
+                        <td>
+                            <span class="badge {% if p.status == 'Completed' %}bg-success{% elif p.status == 'Pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                {{ p.status }}
+                            </span>
+                        </td>
+                        <td class="fw-bold">₹{{ p.total_amount | inr }}</td>
+                        <td>
+                            <a href="{{ url_for('purchases.edit_purchase', purchase_id=p.purchase_id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No purchase orders found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

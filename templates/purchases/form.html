@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if purchase %}Edit Purchase Order{% else %}Create Purchase Order{% endif %} - BuildCore Infrastructure
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% if purchase %}Edit Purchase Order PO-{{ purchase.purchase_id }}{% else %}Create Purchase Order{% endif %}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('purchases.list_purchases') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Purchases
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm" style="max-width: 700px; margin: 0 auto;">
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label for="supplier_id" class="form-label">Select Supplier</label>
+                <select class="form-select" id="supplier_id" name="supplier_id" required>
+                    <option value="">-- Choose a Supplier --</option>
+                    {% for sup in suppliers %}
+                    <option value="{{ sup.supplier_id }}" {% if purchase and purchase.supplier_id == sup.supplier_id %}selected{% endif %}>
+                        {{ sup.supplier_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="project_id" class="form-label">Assign to Project</label>
+                <select class="form-select" id="project_id" name="project_id" required>
+                    <option value="">-- Choose a Project --</option>
+                    {% for proj in projects %}
+                    <option value="{{ proj.project_id }}" {% if purchase and purchase.project_id == proj.project_id %}selected{% endif %}>
+                        {{ proj.project_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label for="purchase_date" class="form-label">Purchase Date</label>
+                    <input type="date" class="form-control" id="purchase_date" name="purchase_date" 
+                           value="{{ purchase.purchase_date if purchase else '' }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="status" class="form-label">Order Status</label>
+                    <select class="form-select" id="status" name="status" required>
+                        <option value="Pending" {% if purchase and purchase.status == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="Approved" {% if purchase and purchase.status == 'Approved' %}selected{% endif %}>Approved</option>
+                        <option value="Shipped" {% if purchase and purchase.status == 'Shipped' %}selected{% endif %}>Shipped</option>
+                        <option value="Delivered" {% if purchase and purchase.status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                        <option value="Completed" {% if purchase and purchase.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Cancelled" {% if purchase and purchase.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">
+                    {% if purchase %}Update Order Details{% else %}Create Order (Add Items Next){% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

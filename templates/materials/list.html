@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Materials - BuildCore Infrastructure{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Materials Directory</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('materials.add_material') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-lg"></i> Add New Material
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Material Name</th>
+                        <th>Unit</th>
+                        <th>Unit Cost</th>
+                        <th>Min Stock</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mat in materials %}
+                    <tr>
+                        <td>{{ mat.material_id }}</td>
+                        <td>
+                            <a href="{{ url_for('materials.view_material', material_id=mat.material_id) }}" class="text-decoration-none fw-bold">
+                                {{ mat.material_name }}
+                            </a>
+                        </td>
+                        <td>{{ mat.unit }}</td>
+                        <td>₹{{ mat.unit_cost | inr }}</td>
+                        <td>{{ "{:.2f}".format(mat.minimum_stock) }}</td>
+                        <td>
+                            <a href="{{ url_for('materials.edit_material', material_id=mat.material_id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No materials found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

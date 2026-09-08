@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BuildCore Infrastructure{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard</h1>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-primary shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Projects</h5>
+                <p class="card-text display-6">{{ proj_stats.total_projects }}</p>
+                <small>{{ proj_stats.active_projects }} Active | {{ proj_stats.completed_projects }} Completed</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-success shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Workers & Equip</h5>
+                <p class="card-text display-6">{{ workers_count }}</p>
+                <small>Total Workers | {{ equipment_count }} Equip Available</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-warning shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Total Purchases</h5>
+                <p class="card-text display-6 fs-3">₹{{ total_purchases | inr }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-danger shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Total Expenses</h5>
+                <p class="card-text display-6 fs-3">₹{{ total_expenses | inr }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4>Active Projects</h4>
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Project Name</th>
+                <th>Type</th>
+                <th>Location</th>
+                <th>Budget (₹)</th>
+                <th>Progress</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in active_projects %}
+            <tr>
+                <td><strong>{{ p.project_name }}</strong></td>
+                <td>{{ p.project_type }}</td>
+                <td>{{ p.location }}</td>
+                <td>{{ p.budget | inr }}</td>
+                <td>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar {% if p.progress == 100 %}bg-success{% endif %}" role="progressbar"
+                            style="width: {{ p.progress }}%;" aria-valuenow="{{ p.progress }}" aria-valuemin="0"
+                            aria-valuemax="100">{{ "{:.0f}".format(p.progress) }}%</div>
+                    </div>
+                </td>
+                <td>
+                    <a href="{{ url_for('projects.view_project', project_id=p.project_id) }}"
+                        class="btn btn-sm btn-outline-primary">View</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center">No active projects found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

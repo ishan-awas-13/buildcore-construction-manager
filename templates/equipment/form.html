@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if equipment else 'Add' }} Equipment - BuildCore Infrastructure{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ 'Edit' if equipment else 'Add New' }} Equipment</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('equipment.list_equipment') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Equipment
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm col-md-8 mx-auto">
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label for="equipment_name" class="form-label">Equipment Name</label>
+                <input type="text" class="form-control" id="equipment_name" name="equipment_name" 
+                       value="{{ equipment.equipment_name if equipment else '' }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="equipment_type" class="form-label">Type</label>
+                <input type="text" class="form-control" id="equipment_type" name="equipment_type" 
+                       value="{{ equipment.equipment_type if equipment else '' }}" required>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="hourly_rate" class="form-label">Hourly Rate (₹)</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="hourly_rate" name="hourly_rate" 
+                           value="{{ equipment.hourly_rate if equipment else '' }}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status" required>
+                        <option value="Available" {% if equipment and equipment.status == 'Available' %}selected{% endif %}>Available</option>
+                        <option value="Maintenance" {% if equipment and equipment.status == 'Maintenance' %}selected{% endif %}>Maintenance</option>
+                        <option value="Retired" {% if equipment and equipment.status == 'Retired' %}selected{% endif %}>Retired</option>
+                    </select>
+                    <div class="form-text">
+                        "In Use" status is dynamically applied when equipment is assigned to an active project task.
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">{{ 'Save Changes' if equipment else 'Add Equipment' }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

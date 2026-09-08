@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.project_name }} - BuildCore Infrastructure{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ project.project_name }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('projects.list_projects') }}" class="btn btn-sm btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Back to Projects
+        </a>
+        <a href="{{ url_for('projects.edit_project', project_id=project.project_id) }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-pencil"></i> Edit Project
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Project Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-4 text-muted">Project ID</div>
+                    <div class="col-sm-8">{{ project.project_id }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 text-muted">Client</div>
+                    <div class="col-sm-8">{{ project.client_name }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 text-muted">Type</div>
+                    <div class="col-sm-8">{{ project.project_type }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 text-muted">Location</div>
+                    <div class="col-sm-8">{{ project.location }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 text-muted">Dates</div>
+                    <div class="col-sm-8">
+                        {{ project.start_date.strftime('%d %b %Y') if project.start_date else 'N/A' }}
+                        to
+                        {{ project.expected_end_date.strftime('%d %b %Y') if project.expected_end_date else 'N/A' }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 text-muted">Budget</div>
+                    <div class="col-sm-8">₹{{ project.budget | inr }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 text-muted">Status</div>
+                    <div class="col-sm-8">
+                        <span
+                            class="badge {% if project.status == 'Active' %}bg-success{% elif project.status == 'Completed' %}bg-primary{% elif project.status == 'On Hold' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                            {{ project.status }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Overall Progress</h5>
+            </div>
+            <div class="card-body text-center">
+                <h1 class="display-4">{{ "{:.0f}".format(project.progress) }}%</h1>
+                <div class="progress mt-3" style="height: 25px;">
+                    <div class="progress-bar {% if project.progress == 100 %}bg-success{% endif %}" role="progressbar"
+                        style="width: {{ project.progress }}%;" aria-valuenow="{{ project.progress }}" aria-valuemin="0"
+                        aria-valuemax="100"></div>
+                </div>
+                <p class="text-muted mt-3 small">Calculated dynamically as the average of all task completion
+                    percentages via SQL View.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Collapsible Project Tasks Section -->
+<div class="card shadow-sm mb-4">
+    <a href="#collapseTasks" class="text-decoration-none text-dark d-block" data-bs-toggle="collapse" role="button"
+        aria-expanded="false" aria-controls="collapseTasks">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Project Tasks</h5>
+            <i class="bi bi-chevron-down"></i>
+        </div>
+    </a>
+    <div class="collapse" id="collapseTasks">
+        <div class="card-body">
+            {% if project_tasks %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Dates</th>
+                            <th>Status</th>
+                            <th style="width: 30%;">Progress</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pt in project_tasks %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('tasks.view_task', task_type_id=pt.task_type_id) }}"
+                                    class="text-decoration-none">
+                                    <strong>{{ pt.task_name }}</strong> <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </td>
+                            <td>
+                                <small>{{ pt.start_date.strftime('%d %b %Y') }} - {{ pt.due_date.strftime('%d %b %Y')
+                                    }}</small>
+                            </td>
+                            <td>
+                                <span
+                                    class="badge {% if pt.status == 'Completed' %}bg-success{% elif pt.status == 'In Progress' %}bg-primary{% elif pt.status == 'On Hold' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ pt.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 22px;">
+                                    <div class="progress-bar {% if pt.completion_percentage == 100 %}bg-success{% endif %}"
+                                        role="progressbar" style="width: {{ pt.completion_percentage }}%;"
+                                        aria-valuenow="{{ pt.completion_percentage }}" aria-valuemin="0"
+                                        aria-valuemax="100">
+                                        {{ "{:.0f}".format(pt.completion_percentage) }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('tasks.edit_project_task', project_task_id=pt.project_task_id) }}"
+                                    class="btn btn-sm btn-outline-secondary">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0 text-center">No tasks assigned to this project yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Collapsible Project Equipment Section -->
+<div class="card shadow-sm mb-4">
+    <a href="#collapseEquipment" class="text-decoration-none text-dark d-block" data-bs-toggle="collapse" role="button"
+        aria-expanded="false" aria-controls="collapseEquipment">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Assigned Equipment</h5>
+            <i class="bi bi-chevron-down"></i>
+        </div>
+    </a>
+    <div class="collapse" id="collapseEquipment">
+        <div class="card-body">
+            {% if project_equipment %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Equipment</th>
+                            <th>Task</th>
+                            <th>Dates</th>
+                            <th>Hours Used</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eq in project_equipment %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('equipment.view_equipment', equipment_id=eq.equipment_id) }}"
+                                    class="text-decoration-none">
+                                    <strong>{{ eq.equipment_name }}</strong> <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                                <br><small class="text-muted">{{ eq.equipment_type }}</small>
+                            </td>
+                            <td>
+                                {{ eq.task_name }}
+                            </td>
+                            <td>
+                                {{ eq.start_date.strftime('%d %b %Y') }}
+                                {% if eq.end_date %}
+                                to {{ eq.end_date.strftime('%d %b %Y') }}
+                                {% else %}
+                                <br><small class="text-success">(Ongoing)</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ "{:.2f}".format(eq.hours_used) }} hrs</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0 text-center">No equipment assigned to this project yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Collapsible Project Materials Section -->
+<div class="card shadow-sm mb-4">
+    <a href="#collapseMaterials" class="text-decoration-none text-dark d-block" data-bs-toggle="collapse" role="button"
+        aria-expanded="false" aria-controls="collapseMaterials">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Allocated Materials</h5>
+            <i class="bi bi-chevron-down"></i>
+        </div>
+    </a>
+    <div class="collapse" id="collapseMaterials">
+        <div class="card-body">
+            {% if project_materials %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Allocated</th>
+                            <th>Used</th>
+                            <th>Remaining</th>
+                            <th>Estimated Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mat in project_materials %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('materials.view_material', material_id=mat.material_id) }}"
+                                    class="text-decoration-none">
+                                    <strong>{{ mat.material_name }}</strong> <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </td>
+                            <td>{{ "{:.2f}".format(mat.quantity_allocated) }} {{ mat.unit }}</td>
+                            <td>{{ "{:.2f}".format(mat.quantity_used) }} {{ mat.unit }}</td>
+                            <td>
+                                {% set remaining = mat.quantity_allocated - mat.quantity_used %}
+                                <span class="{% if remaining < 0 %}text-danger fw-bold{% elif remaining == 0 %}text-warning fw-bold{% else %}text-success{% endif %}">
+                                    {{ "{:.2f}".format(remaining) }} {{ mat.unit }}
+                                </span>
+                            </td>
+                            <td>₹{{ (mat.quantity_allocated * mat.unit_cost) | inr }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0 text-center">No materials allocated to this project yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

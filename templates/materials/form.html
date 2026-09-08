@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if material %}Edit Material{% else %}Add Material{% endif %} - BuildCore Infrastructure
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% if material %}Edit Material{% else %}Add New Material{% endif %}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('materials.list_materials') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Materials
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm" style="max-width: 600px; margin: 0 auto;">
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label for="material_name" class="form-label">Material Name</label>
+                <input type="text" class="form-control" id="material_name" name="material_name" 
+                       value="{{ material.material_name if material else '' }}" required>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="unit" class="form-label">Unit of Measurement</label>
+                    <input type="text" class="form-control" id="unit" name="unit" 
+                           value="{{ material.unit if material else '' }}" placeholder="e.g. Tons, Liters, Bags" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="unit_cost" class="form-label">Unit Cost (₹)</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="unit_cost" name="unit_cost" 
+                           value="{{ material.unit_cost if material else '0.00' }}" required>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="minimum_stock" class="form-label">Minimum Stock (Threshold)</label>
+                <input type="number" step="0.01" min="0" class="form-control" id="minimum_stock" name="minimum_stock" 
+                       value="{{ material.minimum_stock if material else '0.00' }}" required>
+                <div class="form-text">Alert threshold when stock drops below this amount.</div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">
+                    {% if material %}Update Material{% else %}Save Material{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
