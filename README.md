@@ -1,4 +1,4 @@
-# BuildCore Infrastructure 🏗️
+# BuildCore Infrastructure
 
 BuildCore Infrastructure is a comprehensive, web-based database management system designed specifically for construction resource management. It replaces error-prone spreadsheets with a robust, dynamically validated PostgreSQL database accessed through a modern, responsive web application.
 
