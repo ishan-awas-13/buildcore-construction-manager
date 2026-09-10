@@ -1,9 +1,8 @@
 -- Clear existing data
 TRUNCATE users, projects, workers, materials, equipment, suppliers, project_workers, task_types, project_tasks, task_workers, equipment_assignments, material_usage, purchases, purchase_items, expenses RESTART IDENTITY CASCADE;
 
--- Insert Users
-INSERT INTO users (username, password_hash) VALUES 
-('admin', 'scrypt:32768:8:1$K59mF33hGq0lq1fL$1e12e10fb71c4c9d5f7c32cf97b1ebfb06cc19c118cdcb17fbaaa0ccf6b2cdfb3eb6997092951f28b43ec8b50e504c5dc6d5845c43d2db894819d671842ebcd7');
+-- Users are intentionally NOT seeded here.
+-- Run `flask create-admin` to configure a secure admin account interactively.
 
 -- Insert Projects (Indian Construction Context)
 INSERT INTO projects (project_name, project_type, client_name, location, start_date, expected_end_date, budget, status) VALUES

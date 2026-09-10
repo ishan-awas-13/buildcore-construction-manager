@@ -166,5 +166,5 @@ erDiagram
    - Create a `.env` file in the root directory.
    - Add your database URI: `DATABASE_URL=postgresql://username:password@localhost:5432/buildcore`
 6. **Initialize the Database**: `python setup_db.py`
-7. **Create the Admin User**: `flask create-admin`
+7. **Create the Admin User**: Run `flask create-admin` and follow the interactive prompts to securely set up an administrator account.
 8. **Run the Server**: `flask run --debug`

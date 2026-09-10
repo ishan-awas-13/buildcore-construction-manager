@@ -51,7 +51,12 @@ def add_worker():
         role = request.form['role']
         skill = request.form['skill']
         phone = request.form.get('phone', '')
-        daily_rate = request.form['daily_rate']
+        daily_rate = float(request.form['daily_rate'])
+        status = request.form['status']
+        
+        if daily_rate <= 0:
+            flash('Daily rate must be greater than 0.', 'danger')
+            return redirect(url_for('workers.add_worker'))
         status = request.form['status']
         
         db.session.execute(text("""
@@ -75,7 +80,12 @@ def edit_worker(worker_id):
         role = request.form['role']
         skill = request.form['skill']
         phone = request.form.get('phone', '')
-        daily_rate = request.form['daily_rate']
+        daily_rate = float(request.form['daily_rate'])
+        status = request.form['status']
+        
+        if daily_rate <= 0:
+            flash('Daily rate must be greater than 0.', 'danger')
+            return redirect(url_for('workers.edit_worker', worker_id=worker_id))
         status = request.form['status']
         
         db.session.execute(text("""
@@ -99,10 +109,13 @@ def edit_worker(worker_id):
 @login_required
 def assign_worker(worker_id):
     project_task_id = request.form.get('project_task_id')
-    assigned_hours = request.form.get('assigned_hours', 0)
+    assigned_hours = float(request.form.get('assigned_hours', 0))
     
     if not project_task_id:
         flash("You must select a task.", "danger")
+        return redirect(url_for('workers.view_worker', worker_id=worker_id))
+    if assigned_hours <= 0:
+        flash("Assigned hours must be greater than 0.", "danger")
         return redirect(url_for('workers.view_worker', worker_id=worker_id))
         
     db.session.execute(text("""

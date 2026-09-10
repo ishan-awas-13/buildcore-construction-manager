@@ -86,19 +86,30 @@ def create_app():
             return redirect(url_for('dashboard.index'))
         return redirect(url_for('login'))
         
-    # Helper command to create an admin user from CLI
+    import click
+
     @app.cli.command("create-admin")
-    def create_admin():
-        hashed = generate_password_hash("admin")
+    @click.option('--username', prompt='Username', default='admin', help='Administrator username')
+    @click.password_option(prompt='Password', confirmation_prompt=True, help='Administrator password')
+    def create_admin(username, password):
+        username = username.strip()
+        if not username:
+            click.echo("Error: Username cannot be blank.")
+            return
+        if not password:
+            click.echo("Error: Password cannot be blank.")
+            return
+        
+        hashed = generate_password_hash(password)
         sql = text("""
             INSERT INTO users (username, password_hash) 
             VALUES (:username, :password) 
             ON CONFLICT (username) 
             DO UPDATE SET password_hash = EXCLUDED.password_hash
         """)
-        db.session.execute(sql, {'username': 'admin', 'password': hashed})
+        db.session.execute(sql, {'username': username, 'password': hashed})
         db.session.commit()
-        print("Admin user created/verified with password 'admin'.")
+        click.echo(f"Admin user '{username}' configured successfully.")
 
     from routes.dashboard import dashboard_bp
     app.register_blueprint(dashboard_bp)

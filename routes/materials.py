@@ -49,8 +49,15 @@ def add_material():
     if request.method == 'POST':
         material_name = request.form['material_name']
         unit = request.form['unit']
-        unit_cost = request.form['unit_cost']
-        minimum_stock = request.form['minimum_stock']
+        unit_cost = float(request.form['unit_cost'])
+        minimum_stock = float(request.form['minimum_stock'])
+        
+        if unit_cost < 0:
+            flash('Unit cost cannot be negative.', 'danger')
+            return redirect(url_for('materials.add_material'))
+        if minimum_stock < 0:
+            flash('Minimum stock cannot be negative.', 'danger')
+            return redirect(url_for('materials.add_material'))
         
         db.session.execute(text("""
             INSERT INTO materials (material_name, unit, unit_cost, minimum_stock)
@@ -71,8 +78,15 @@ def edit_material(material_id):
     if request.method == 'POST':
         material_name = request.form['material_name']
         unit = request.form['unit']
-        unit_cost = request.form['unit_cost']
-        minimum_stock = request.form['minimum_stock']
+        unit_cost = float(request.form['unit_cost'])
+        minimum_stock = float(request.form['minimum_stock'])
+        
+        if unit_cost < 0:
+            flash('Unit cost cannot be negative.', 'danger')
+            return redirect(url_for('materials.edit_material', material_id=material_id))
+        if minimum_stock < 0:
+            flash('Minimum stock cannot be negative.', 'danger')
+            return redirect(url_for('materials.edit_material', material_id=material_id))
         
         db.session.execute(text("""
             UPDATE materials SET 
@@ -95,11 +109,14 @@ def edit_material(material_id):
 @login_required
 def allocate_material(material_id):
     project_id = request.form.get('project_id')
-    quantity_allocated = request.form.get('quantity_allocated', 0)
+    quantity_allocated = float(request.form.get('quantity_allocated', 0))
     quantity_used = 0 # Initially 0, usage can be updated later
     
     if not project_id:
         flash("Project is required.", "danger")
+        return redirect(url_for('materials.view_material', material_id=material_id))
+    if quantity_allocated <= 0:
+        flash("Quantity allocated must be strictly greater than 0.", "danger")
         return redirect(url_for('materials.view_material', material_id=material_id))
         
     # Check if this material is already allocated to this project

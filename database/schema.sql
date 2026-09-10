@@ -138,7 +138,8 @@ CREATE TABLE material_usage (
     project_id INT NOT NULL REFERENCES projects(project_id) ON DELETE CASCADE,
     material_id INT NOT NULL REFERENCES materials(material_id) ON DELETE CASCADE,
     quantity_allocated NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (quantity_allocated >= 0),
-    quantity_used NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (quantity_used >= 0)
+    quantity_used NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (quantity_used >= 0),
+    CONSTRAINT check_material_used CHECK (quantity_used <= quantity_allocated)
 );
 
 -- 12. Purchases
@@ -246,12 +247,13 @@ SELECT
     p.purchase_date AS transaction_date,
     'Materials' AS category,
     m.material_name || ' — ' || pi.quantity || ' ' || m.unit || ' @ ₹' || pi.unit_price AS description,
-    (pi.quantity * pi.unit_price) AS amount,
+    ROUND(pi.quantity * pi.unit_price, 2) AS amount,
     'Purchase' AS source_type,
     p.purchase_id AS source_id
 FROM purchase_items pi
 JOIN purchases p ON pi.purchase_id = p.purchase_id
 JOIN materials m ON pi.material_id = m.material_id
+WHERE p.status IN ('Delivered', 'Completed')
 
 UNION ALL
 

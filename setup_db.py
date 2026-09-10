@@ -24,5 +24,9 @@ if __name__ == "__main__":
         run_sql_file('schema.sql')
         run_sql_file('seed.sql')
         print("\nDatabase setup complete!")
+        print("-" * 40)
+        print("Please run the following command to create your secure admin account:")
+        print("    flask create-admin")
+        print("-" * 40)
     except Exception as e:
         print(f"\nError during setup: {e}")

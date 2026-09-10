@@ -29,6 +29,11 @@ def add_purchase():
         purchase_date = request.form['purchase_date']
         status = request.form['status']
         
+        valid_statuses = ['Ordered', 'Shipped', 'Delivered', 'Completed', 'Cancelled']
+        if status not in valid_statuses:
+            flash('Invalid status selected.', 'danger')
+            return redirect(url_for('purchases.add_purchase'))
+        
         sql = text("""
             INSERT INTO purchases (supplier_id, project_id, purchase_date, status)
             VALUES (:supplier_id, :project_id, :purchase_date, :status)
@@ -87,6 +92,11 @@ def edit_purchase(purchase_id):
         purchase_date = request.form['purchase_date']
         status = request.form['status']
         
+        valid_statuses = ['Ordered', 'Shipped', 'Delivered', 'Completed', 'Cancelled']
+        if status not in valid_statuses:
+            flash('Invalid status selected.', 'danger')
+            return redirect(url_for('purchases.edit_purchase', purchase_id=purchase_id))
+        
         sql = text("""
             UPDATE purchases 
             SET supplier_id=:supplier_id, project_id=:project_id, purchase_date=:purchase_date, status=:status
@@ -110,8 +120,15 @@ def edit_purchase(purchase_id):
 @login_required
 def add_purchase_item(purchase_id):
     material_id = request.form['material_id']
-    quantity = request.form['quantity']
-    unit_price = request.form['unit_price']
+    quantity = float(request.form['quantity'])
+    unit_price = float(request.form['unit_price'])
+    
+    if quantity <= 0:
+        flash('Quantity must be strictly greater than 0.', 'danger')
+        return redirect(url_for('purchases.view_purchase', purchase_id=purchase_id))
+    if unit_price < 0:
+        flash('Unit price cannot be negative.', 'danger')
+        return redirect(url_for('purchases.view_purchase', purchase_id=purchase_id))
     
     sql = text("""
         INSERT INTO purchase_items (purchase_id, material_id, quantity, unit_price)

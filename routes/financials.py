@@ -88,10 +88,18 @@ def project_dashboard(project_id):
 @login_required
 def add_misc_expense(project_id):
     if request.method == 'POST':
-        expense_type = request.form['expense_type']
-        amount = request.form['amount']
+        expense_type = request.form['expense_type'].strip()
+        amount = float(request.form['amount'])
         expense_date = request.form['expense_date']
-        description = request.form.get('description', '')
+        description = request.form.get('description', '').strip()
+        
+        if amount < 0:
+            flash('Amount cannot be negative.', 'danger')
+            return redirect(url_for('financials.add_misc_expense', project_id=project_id))
+        if not expense_type:
+            flash('Expense type cannot be empty.', 'danger')
+            return redirect(url_for('financials.add_misc_expense', project_id=project_id))
+
         
         sql = text("""
             INSERT INTO expenses (project_id, expense_type, amount, expense_date, description)
@@ -128,10 +136,17 @@ def edit_misc_expense(expense_id):
         return redirect(url_for('financials.list_financials'))
     
     if request.method == 'POST':
-        expense_type = request.form['expense_type']
-        amount = request.form['amount']
+        expense_type = request.form['expense_type'].strip()
+        amount = float(request.form['amount'])
         expense_date = request.form['expense_date']
-        description = request.form.get('description', '')
+        description = request.form.get('description', '').strip()
+        
+        if amount < 0:
+            flash('Amount cannot be negative.', 'danger')
+            return redirect(url_for('financials.edit_misc_expense', expense_id=expense_id))
+        if not expense_type:
+            flash('Expense type cannot be empty.', 'danger')
+            return redirect(url_for('financials.edit_misc_expense', expense_id=expense_id))
         
         sql = text("""
             UPDATE expenses 

@@ -51,7 +51,11 @@ def add_equipment():
         equipment_name = request.form['equipment_name']
         equipment_type = request.form['equipment_type']
         status = request.form['status']
-        hourly_rate = request.form['hourly_rate']
+        hourly_rate = float(request.form['hourly_rate'])
+        
+        if hourly_rate < 0:
+            flash('Hourly rate cannot be negative.', 'danger')
+            return redirect(url_for('equipment.add_equipment'))
         
         db.session.execute(text("""
             INSERT INTO equipment (equipment_name, equipment_type, status, hourly_rate)
@@ -73,7 +77,11 @@ def edit_equipment(equipment_id):
         equipment_name = request.form['equipment_name']
         equipment_type = request.form['equipment_type']
         status = request.form['status']
-        hourly_rate = request.form['hourly_rate']
+        hourly_rate = float(request.form['hourly_rate'])
+        
+        if hourly_rate < 0:
+            flash('Hourly rate cannot be negative.', 'danger')
+            return redirect(url_for('equipment.edit_equipment', equipment_id=equipment_id))
         
         db.session.execute(text("""
             UPDATE equipment SET 
@@ -98,10 +106,39 @@ def assign_equipment(equipment_id):
     project_task_id = request.form.get('project_task_id')
     start_date = request.form.get('start_date')
     end_date = request.form.get('end_date') or None
-    hours_used = request.form.get('hours_used', 0)
+    hours_used = float(request.form.get('hours_used', 0))
     
     if not project_task_id or not start_date:
         flash("Task and Start Date are required.", "danger")
+        return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
+    if hours_used < 0:
+        flash("Hours used cannot be negative.", "danger")
+        return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
+    if end_date and start_date > end_date:
+        flash("Start date cannot be after end date.", "danger")
+        return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
+        
+    # Overlap Check
+    if end_date:
+        overlap_sql = text("""
+            SELECT 1 FROM equipment_assignments
+            WHERE equipment_id = :eq_id
+            AND start_date <= :end_date
+            AND (end_date >= :start_date OR end_date IS NULL)
+            LIMIT 1
+        """)
+        overlap = db.session.execute(overlap_sql, {'eq_id': equipment_id, 'start_date': start_date, 'end_date': end_date}).fetchone()
+    else:
+        overlap_sql = text("""
+            SELECT 1 FROM equipment_assignments
+            WHERE equipment_id = :eq_id
+            AND (end_date >= :start_date OR end_date IS NULL)
+            LIMIT 1
+        """)
+        overlap = db.session.execute(overlap_sql, {'eq_id': equipment_id, 'start_date': start_date}).fetchone()
+        
+    if overlap:
+        flash("This equipment is already assigned during the specified overlapping period.", "danger")
         return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
         
     db.session.execute(text("""
