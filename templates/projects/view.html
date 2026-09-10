@@ -147,7 +147,10 @@
                 </table>
             </div>
             {% else %}
-            <p class="text-muted mb-0 text-center">No tasks assigned to this project yet.</p>
+            <div class="text-center py-4">
+                <p class="text-muted mb-3">No tasks assigned to this project yet.</p>
+                <a href="{{ url_for('tasks.list_tasks') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-list-task"></i> Assign Tasks from Master List</a>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -203,7 +206,10 @@
                 </table>
             </div>
             {% else %}
-            <p class="text-muted mb-0 text-center">No equipment assigned to this project yet.</p>
+            <div class="text-center py-4">
+                <p class="text-muted mb-3">No equipment assigned to this project yet.</p>
+                <a href="{{ url_for('equipment.list_equipment') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-truck"></i> Assign Equipment from Master List</a>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -256,7 +262,10 @@
                 </table>
             </div>
             {% else %}
-            <p class="text-muted mb-0 text-center">No materials allocated to this project yet.</p>
+            <div class="text-center py-4">
+                <p class="text-muted mb-3">No materials allocated to this project yet.</p>
+                <a href="{{ url_for('materials.list_materials') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-box"></i> Allocate Materials from Master List</a>
+            </div>
             {% endif %}
         </div>
     </div>
