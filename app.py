@@ -138,6 +138,9 @@ def create_app():
     from routes.financials import financials_bp
     app.register_blueprint(financials_bp)
 
+    from routes.reports import reports_bp
+    app.register_blueprint(reports_bp)
+
     return app
 
 if __name__ == '__main__':

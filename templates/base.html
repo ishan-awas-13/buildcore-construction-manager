@@ -93,7 +93,9 @@
                             <a class="nav-link {% if request.endpoint and request.endpoint.startswith('financials.') %}active{% endif %}" href="{{ url_for('financials.list_financials') }}">Financials</a>
                         </li>
                         <li class="nav-item mt-4">
-                            <a class="nav-link text-warning" href="#">Reports</a>
+                            <a class="nav-link text-warning {% if request.endpoint and request.endpoint.startswith('reports.') %}active{% endif %}" href="{{ url_for('reports.dashboard') }}">
+                                <i class="bi bi-graph-up me-2"></i>Reports
+                            </a>
                         </li>
                     </ul>
                 </div>
