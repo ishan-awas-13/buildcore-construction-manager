@@ -118,7 +118,8 @@ CREATE TABLE task_workers (
     task_worker_id SERIAL PRIMARY KEY,
     project_task_id INT NOT NULL REFERENCES project_tasks(project_task_id) ON DELETE CASCADE,
     worker_id INT NOT NULL REFERENCES workers(worker_id) ON DELETE CASCADE,
-    assigned_hours NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (assigned_hours >= 0)
+    assigned_hours NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (assigned_hours >= 0),
+    locked_daily_rate NUMERIC(10, 2) NOT NULL DEFAULT 0
 );
 
 -- 10. Equipment Assignments (Many-to-Many over time)
@@ -129,6 +130,7 @@ CREATE TABLE equipment_assignments (
     start_date DATE NOT NULL,
     end_date DATE,
     hours_used NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (hours_used >= 0),
+    locked_hourly_rate NUMERIC(10, 2) NOT NULL DEFAULT 0,
     CONSTRAINT check_eq_end_date CHECK (end_date IS NULL OR end_date >= start_date)
 );
 
@@ -193,7 +195,10 @@ CREATE VIEW project_progress_view AS
 SELECT 
     p.project_id,
     p.project_name,
-    COALESCE(AVG(pt.completion_percentage), 0) AS progress_percentage,
+    COALESCE(
+        SUM(pt.completion_percentage * (pt.due_date - pt.start_date + 1)) / 
+        NULLIF(SUM(pt.due_date - pt.start_date + 1), 0), 0
+    ) AS progress_percentage,
     COUNT(pt.project_task_id) AS total_tasks,
     SUM(CASE WHEN pt.status = 'Completed' THEN 1 ELSE 0 END) AS completed_tasks
 FROM 
@@ -257,14 +262,14 @@ WHERE p.status IN ('Delivered', 'Completed')
 
 UNION ALL
 
--- LABOUR: Cost = (assigned_hours / 8) * daily_rate
+-- LABOUR: Cost = (assigned_hours / 8) * locked_daily_rate
 SELECT
     'LAB-' || tw.task_worker_id AS transaction_id,
     pt.project_id,
     pt.start_date AS transaction_date,
     'Labour' AS category,
     w.name || ' — ' || tt.task_name || ' (' || tw.assigned_hours || ' hrs)' AS description,
-    ROUND((tw.assigned_hours / 8.0) * w.daily_rate, 2) AS amount,
+    ROUND((tw.assigned_hours / 8.0) * tw.locked_daily_rate, 2) AS amount,
     'Labour' AS source_type,
     tw.task_worker_id AS source_id
 FROM task_workers tw
@@ -274,14 +279,14 @@ JOIN task_types tt ON pt.task_type_id = tt.task_type_id
 
 UNION ALL
 
--- EQUIPMENT: Cost = hours_used * hourly_rate
+-- EQUIPMENT: Cost = hours_used * locked_hourly_rate
 SELECT
     'EQP-' || ea.assignment_id AS transaction_id,
     pt.project_id,
     ea.start_date AS transaction_date,
     'Equipment' AS category,
     eq.equipment_name || ' — ' || tt.task_name || ' (' || ea.hours_used || ' hrs)' AS description,
-    ROUND(ea.hours_used * eq.hourly_rate, 2) AS amount,
+    ROUND(ea.hours_used * ea.locked_hourly_rate, 2) AS amount,
     'Equipment' AS source_type,
     ea.assignment_id AS source_id
 FROM equipment_assignments ea

@@ -141,15 +141,18 @@ def assign_equipment(equipment_id):
         flash("This equipment is already assigned during the specified overlapping period.", "danger")
         return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
         
+    equipment = db.session.execute(text("SELECT hourly_rate FROM equipment WHERE equipment_id = :id"), {'id': equipment_id}).fetchone()
+
     db.session.execute(text("""
-        INSERT INTO equipment_assignments (equipment_id, project_task_id, start_date, end_date, hours_used)
-        VALUES (:equipment_id, :project_task_id, :start_date, :end_date, :hours_used)
+        INSERT INTO equipment_assignments (equipment_id, project_task_id, start_date, end_date, hours_used, locked_hourly_rate)
+        VALUES (:equipment_id, :project_task_id, :start_date, :end_date, :hours_used, :locked_hourly_rate)
     """), {
         'equipment_id': equipment_id,
         'project_task_id': project_task_id,
         'start_date': start_date,
         'end_date': end_date,
-        'hours_used': hours_used
+        'hours_used': hours_used,
+        'locked_hourly_rate': equipment.hourly_rate
     })
     db.session.commit()
     flash("Equipment assigned to task successfully!", "success")

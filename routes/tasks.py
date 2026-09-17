@@ -110,6 +110,16 @@ def assign_task(task_type_id):
         completion_percentage = request.form['completion_percentage']
         description = request.form.get('description', '')
 
+        # Timeline Boundary Validation
+        project = db.session.execute(text("SELECT start_date, expected_end_date FROM projects WHERE project_id = :id"), {'id': project_id}).fetchone()
+        if project:
+            from datetime import datetime
+            sd = datetime.strptime(start_date, '%Y-%m-%d').date()
+            dd = datetime.strptime(due_date, '%Y-%m-%d').date()
+            if sd < project.start_date or dd > project.expected_end_date:
+                flash(f"Task dates must fall within the project timeline ({project.start_date.strftime('%d %b %Y')} to {project.expected_end_date.strftime('%d %b %Y')}).", "danger")
+                return redirect(url_for('tasks.assign_task', task_type_id=task_type_id))
+
         db.session.execute(text("""
             INSERT INTO project_tasks (project_id, task_type_id, start_date, due_date, status, completion_percentage, description)
             VALUES (:project_id, :task_type_id, :start_date, :due_date, :status, :completion_percentage, :description)
@@ -147,6 +157,21 @@ def edit_project_task(project_task_id):
         status = request.form['status']
         completion_percentage = request.form['completion_percentage']
         description = request.form.get('description', '')
+
+        # Timeline Boundary Validation
+        project_info = db.session.execute(text("""
+            SELECT p.start_date, p.expected_end_date 
+            FROM projects p
+            JOIN project_tasks pt ON p.project_id = pt.project_id
+            WHERE pt.project_task_id = :id
+        """), {'id': project_task_id}).fetchone()
+        if project_info:
+            from datetime import datetime
+            sd = datetime.strptime(start_date, '%Y-%m-%d').date()
+            dd = datetime.strptime(due_date, '%Y-%m-%d').date()
+            if sd < project_info.start_date or dd > project_info.expected_end_date:
+                flash(f"Task dates must fall within the project timeline ({project_info.start_date.strftime('%d %b %Y')} to {project_info.expected_end_date.strftime('%d %b %Y')}).", "danger")
+                return redirect(url_for('tasks.edit_project_task', project_task_id=project_task_id))
 
         db.session.execute(text("""
             UPDATE project_tasks SET

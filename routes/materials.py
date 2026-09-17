@@ -129,6 +129,17 @@ def allocate_material(material_id):
         flash("This material is already allocated to the selected project. Please edit the existing allocation instead.", "warning")
         return redirect(url_for('materials.view_material', material_id=material_id))
         
+    # Phantom Inventory Check
+    inventory = db.session.execute(text("""
+        SELECT 
+            COALESCE((SELECT SUM(quantity) FROM purchase_items pi JOIN purchases p ON pi.purchase_id = p.purchase_id WHERE pi.material_id = :id AND p.status IN ('Delivered', 'Completed')), 0) -
+            COALESCE((SELECT SUM(quantity_allocated) FROM material_usage WHERE material_id = :id), 0) AS available
+    """), {'id': material_id}).fetchone()
+    
+    if inventory.available < quantity_allocated:
+        flash(f"Insufficient inventory. Only {inventory.available} units available.", "danger")
+        return redirect(url_for('materials.view_material', material_id=material_id))
+        
     db.session.execute(text("""
         INSERT INTO material_usage (project_id, material_id, quantity_allocated, quantity_used)
         VALUES (:project_id, :material_id, :quantity_allocated, :quantity_used)

@@ -118,13 +118,16 @@ def assign_worker(worker_id):
         flash("Assigned hours must be greater than 0.", "danger")
         return redirect(url_for('workers.view_worker', worker_id=worker_id))
         
+    worker = db.session.execute(text("SELECT daily_rate FROM workers WHERE worker_id = :id"), {'id': worker_id}).fetchone()
+
     db.session.execute(text("""
-        INSERT INTO task_workers (project_task_id, worker_id, assigned_hours)
-        VALUES (:project_task_id, :worker_id, :assigned_hours)
+        INSERT INTO task_workers (project_task_id, worker_id, assigned_hours, locked_daily_rate)
+        VALUES (:project_task_id, :worker_id, :assigned_hours, :locked_daily_rate)
     """), {
         'project_task_id': project_task_id,
         'worker_id': worker_id,
-        'assigned_hours': assigned_hours
+        'assigned_hours': assigned_hours,
+        'locked_daily_rate': worker.daily_rate
     })
     db.session.commit()
     flash("Worker assigned to task successfully!", "success")
