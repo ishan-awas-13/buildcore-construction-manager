@@ -26,6 +26,14 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'login'
 
+    @app.after_request
+    def add_header(response):
+        # Prevent browser back-forward cache from keeping stale authenticated pages
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+        return response
+
     # Register Indian Rupee format filter
     @app.template_filter('inr')
     def format_inr_filter(value):
@@ -57,6 +65,9 @@ def create_app():
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
+        if current_user.is_authenticated:
+            return redirect(url_for('index'))
+            
         if request.method == 'POST':
             username = request.form.get('username')
             password = request.form.get('password')
@@ -84,7 +95,7 @@ def create_app():
     def index():
         if current_user.is_authenticated:
             return redirect(url_for('dashboard.index'))
-        return redirect(url_for('login'))
+        return render_template('landing.html')
         
     import click
 
