@@ -22,7 +22,8 @@
                         <th>Material Name</th>
                         <th>Unit</th>
                         <th>Unit Cost</th>
-                        <th>Min Stock</th>
+                        <th>Allocated Across Projects</th>
+                        <th>Used Across Projects</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -37,14 +38,15 @@
                         </td>
                         <td>{{ mat.unit }}</td>
                         <td>₹{{ mat.unit_cost | inr }}</td>
-                        <td>{{ "{:.2f}".format(mat.minimum_stock) }}</td>
+                        <td>{{ "{:.2f}".format(mat.total_allocated) }} {{ mat.unit }}</td>
+                        <td>{{ "{:.2f}".format(mat.total_used) }} {{ mat.unit }}</td>
                         <td>
                             <a href="{{ url_for('materials.edit_material', material_id=mat.material_id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">No materials found.</td>
+                        <td colspan="7" class="text-center py-4 text-muted">No materials found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

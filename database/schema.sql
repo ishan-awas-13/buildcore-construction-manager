@@ -57,8 +57,7 @@ CREATE TABLE materials (
     material_id SERIAL PRIMARY KEY,
     material_name VARCHAR(255) NOT NULL,
     unit VARCHAR(50) NOT NULL,
-    unit_cost NUMERIC(10, 2) NOT NULL CHECK (unit_cost >= 0),
-    minimum_stock NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (minimum_stock >= 0)
+    unit_cost NUMERIC(10, 2) NOT NULL CHECK (unit_cost >= 0)
 );
 
 -- 4. Equipment

@@ -6,13 +6,23 @@
     <title>{% block title %}BuildCore Infrastructure{% endblock %}</title>
     <link rel="icon" href="{{ url_for('static', filename='images/hard_hat_icon.png') }}" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
         }
         .navbar-brand {
+            display: inline-flex;
+            align-items: center;
             font-weight: bold;
             color: #0d6efd !important;
+        }
+        .navbar-brand img {
+            width: 25px;
+            height: 25px;
+            object-fit: contain;
+            filter: invert(1);
+            margin-right: 0.5rem;
         }
         .sidebar {
             height: calc(100vh - 56px);
@@ -31,6 +41,16 @@
             color: #fff;
             background-color: #495057;
         }
+        .sidebar .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .sidebar .nav-link i {
+            flex: 0 0 1.1rem;
+            text-align: center;
+            font-size: 1rem;
+        }
         .content {
             padding: 20px;
         }
@@ -41,7 +61,10 @@
     
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">BuildCore DB</a>
+            <a class="navbar-brand" href="/">
+                <img src="{{ url_for('static', filename='images/hard_hat_icon.png') }}" alt="" aria-hidden="true">
+                <span>BuildCore DB</span>
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -67,35 +90,35 @@
                 <div class="position-sticky">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'dashboard.index' or request.endpoint == 'index' %}active{% endif %}" href="/">Dashboard</a>
+                            <a class="nav-link {% if request.endpoint == 'dashboard.index' or request.endpoint == 'index' %}active{% endif %}" href="/"><i class="bi bi-speedometer2" aria-hidden="true"></i><span>Dashboard</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('projects.') %}active{% endif %}" href="{{ url_for('projects.list_projects') }}">Projects</a>
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('projects.') %}active{% endif %}" href="{{ url_for('projects.list_projects') }}"><i class="bi bi-kanban" aria-hidden="true"></i><span>Projects</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('workers.') %}active{% endif %}" href="{{ url_for('workers.list_workers') }}">Workers</a>
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('workers.') %}active{% endif %}" href="{{ url_for('workers.list_workers') }}"><i class="bi bi-people" aria-hidden="true"></i><span>Workers</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('equipment.') %}active{% endif %}" href="{{ url_for('equipment.list_equipment') }}">Equipment</a>
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('equipment.') %}active{% endif %}" href="{{ url_for('equipment.list_equipment') }}"><i class="bi bi-truck" aria-hidden="true"></i><span>Equipment</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('tasks.') %}active{% endif %}" href="{{ url_for('tasks.list_tasks') }}">Tasks</a>
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('tasks.') %}active{% endif %}" href="{{ url_for('tasks.list_tasks') }}"><i class="bi bi-list-task" aria-hidden="true"></i><span>Tasks</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('materials.') %}active{% endif %}" href="{{ url_for('materials.list_materials') }}">Materials</a>
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('materials.') %}active{% endif %}" href="{{ url_for('materials.list_materials') }}"><i class="bi bi-box-seam" aria-hidden="true"></i><span>Materials</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('suppliers.') %}active{% endif %}" href="{{ url_for('suppliers.list_suppliers') }}">Suppliers</a>
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('suppliers.') %}active{% endif %}" href="{{ url_for('suppliers.list_suppliers') }}"><i class="bi bi-building" aria-hidden="true"></i><span>Suppliers</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('purchases.') %}active{% endif %}" href="{{ url_for('purchases.list_purchases') }}">Purchases</a>
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('purchases.') %}active{% endif %}" href="{{ url_for('purchases.list_purchases') }}"><i class="bi bi-cart3" aria-hidden="true"></i><span>Purchases</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('financials.') %}active{% endif %}" href="{{ url_for('financials.list_financials') }}">Financials</a>
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('financials.') %}active{% endif %}" href="{{ url_for('financials.list_financials') }}"><i class="bi bi-cash-stack" aria-hidden="true"></i><span>Financials</span></a>
                         </li>
                         <li class="nav-item mt-4">
                             <a class="nav-link text-warning {% if request.endpoint and request.endpoint.startswith('reports.') %}active{% endif %}" href="{{ url_for('reports.dashboard') }}">
-                                <i class="bi bi-graph-up me-2"></i>Reports
+                                <i class="bi bi-bar-chart-line" aria-hidden="true"></i><span>Reports</span>
                             </a>
                         </li>
                     </ul>

@@ -39,22 +39,22 @@ INSERT INTO workers (name, role, skill, phone, daily_rate, status) VALUES
 ('Ravi Varma', 'Safety Officer', 'Safety', '9876543229', 2200.00, 'Assigned');
 
 -- Insert Materials
-INSERT INTO materials (material_name, unit, unit_cost, minimum_stock) VALUES
-('Portland Cement (50kg)', 'Bag', 400.00, 500),
-('TMT Steel Bars (12mm)', 'Tonne', 65000.00, 20),
-('River Sand', 'Cubic Meter', 1200.00, 100),
-('Crushed Stone Aggregate', 'Cubic Meter', 1500.00, 150),
-('Red Bricks', '1000 Pieces', 6000.00, 10),
-('Ready Mix Concrete (M30)', 'Cubic Meter', 4500.00, 50),
-('Copper Wire (2.5 sq mm)', 'Coil (90m)', 1800.00, 30),
-('PVC Pipes (4 inch)', 'Piece (6m)', 800.00, 100),
-('Ceramic Tiles (2x2 ft)', 'Box', 600.00, 200),
-('Emulsion Paint (20L)', 'Bucket', 3500.00, 50),
-('Aluminium Windows', 'Square Foot', 350.00, 100),
-('Teak Wood', 'Cubic Foot', 4000.00, 20),
-('Gypsum Board', 'Piece', 500.00, 150),
-('Waterproofing Chemical', 'Liter', 250.00, 100),
-('Scaffolding Pipes', 'Piece', 650.00, 300);
+INSERT INTO materials (material_name, unit, unit_cost) VALUES
+('Portland Cement (50kg)', 'Bag', 400.00),
+('TMT Steel Bars (12mm)', 'Tonne', 65000.00),
+('River Sand', 'Cubic Meter', 1200.00),
+('Crushed Stone Aggregate', 'Cubic Meter', 1500.00),
+('Red Bricks', '1000 Pieces', 6000.00),
+('Ready Mix Concrete (M30)', 'Cubic Meter', 4500.00),
+('Copper Wire (2.5 sq mm)', 'Coil (90m)', 1800.00),
+('PVC Pipes (4 inch)', 'Piece (6m)', 800.00),
+('Ceramic Tiles (2x2 ft)', 'Box', 600.00),
+('Emulsion Paint (20L)', 'Bucket', 3500.00),
+('Aluminium Windows', 'Square Foot', 350.00),
+('Teak Wood', 'Cubic Foot', 4000.00),
+('Gypsum Board', 'Piece', 500.00),
+('Waterproofing Chemical', 'Liter', 250.00),
+('Scaffolding Pipes', 'Piece', 650.00);
 
 -- Insert Equipment
 INSERT INTO equipment (equipment_name, equipment_type, status, hourly_rate) VALUES

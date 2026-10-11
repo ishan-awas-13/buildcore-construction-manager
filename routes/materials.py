@@ -9,9 +9,17 @@ materials_bp = Blueprint('materials', __name__, url_prefix='/materials')
 @login_required
 def list_materials():
     materials = db.session.execute(text("""
-        SELECT material_id, material_name, unit, unit_cost, minimum_stock
-        FROM materials
-        ORDER BY material_name
+         SELECT m.material_id, m.material_name, m.unit, m.unit_cost,
+             COALESCE(mu.total_allocated, 0) AS total_allocated,
+             COALESCE(mu.total_used, 0) AS total_used
+         FROM materials m
+         LEFT JOIN (
+             SELECT material_id, SUM(quantity_allocated) AS total_allocated,
+                 SUM(quantity_used) AS total_used
+             FROM material_usage
+             GROUP BY material_id
+         ) mu ON mu.material_id = m.material_id
+         ORDER BY m.material_name
     """)).fetchall()
     return render_template('materials/list.html', materials=materials)
 
@@ -36,12 +44,7 @@ def view_material(material_id):
         ORDER BY p.project_name
     """), {'id': material_id}).fetchall()
     
-    # Active projects for the allocation modal
-    active_projects = db.session.execute(text("""
-        SELECT project_id, project_name FROM projects WHERE status != 'Completed' ORDER BY project_name
-    """)).fetchall()
-        
-    return render_template('materials/view.html', material=material, allocations=allocations, active_projects=active_projects)
+    return render_template('materials/view.html', material=material, allocations=allocations)
 
 @materials_bp.route('/new', methods=['GET', 'POST'])
 @login_required
@@ -50,21 +53,17 @@ def add_material():
         material_name = request.form['material_name']
         unit = request.form['unit']
         unit_cost = float(request.form['unit_cost'])
-        minimum_stock = float(request.form['minimum_stock'])
         
         if unit_cost < 0:
             flash('Unit cost cannot be negative.', 'danger')
             return redirect(url_for('materials.add_material'))
-        if minimum_stock < 0:
-            flash('Minimum stock cannot be negative.', 'danger')
-            return redirect(url_for('materials.add_material'))
         
         db.session.execute(text("""
-            INSERT INTO materials (material_name, unit, unit_cost, minimum_stock)
-            VALUES (:name, :unit, :cost, :min_stock)
+            INSERT INTO materials (material_name, unit, unit_cost)
+            VALUES (:name, :unit, :cost)
         """), {
             'name': material_name, 'unit': unit,
-            'cost': unit_cost, 'min_stock': minimum_stock
+            'cost': unit_cost
         })
         db.session.commit()
         flash('Material added successfully!', 'success')
@@ -79,23 +78,18 @@ def edit_material(material_id):
         material_name = request.form['material_name']
         unit = request.form['unit']
         unit_cost = float(request.form['unit_cost'])
-        minimum_stock = float(request.form['minimum_stock'])
         
         if unit_cost < 0:
             flash('Unit cost cannot be negative.', 'danger')
             return redirect(url_for('materials.edit_material', material_id=material_id))
-        if minimum_stock < 0:
-            flash('Minimum stock cannot be negative.', 'danger')
-            return redirect(url_for('materials.edit_material', material_id=material_id))
         
         db.session.execute(text("""
             UPDATE materials SET 
-                material_name=:name, unit=:unit, 
-                unit_cost=:cost, minimum_stock=:min_stock
+                material_name=:name, unit=:unit, unit_cost=:cost
             WHERE material_id=:id
         """), {
             'name': material_name, 'unit': unit,
-            'cost': unit_cost, 'min_stock': minimum_stock, 'id': material_id
+            'cost': unit_cost, 'id': material_id
         })
         db.session.commit()
         flash('Material updated successfully!', 'success')
@@ -104,51 +98,3 @@ def edit_material(material_id):
     material = db.session.execute(text("SELECT * FROM materials WHERE material_id = :id"), 
                             {'id': material_id}).fetchone()
     return render_template('materials/form.html', material=material)
-
-@materials_bp.route('/<int:material_id>/allocate', methods=['POST'])
-@login_required
-def allocate_material(material_id):
-    project_id = request.form.get('project_id')
-    quantity_allocated = float(request.form.get('quantity_allocated', 0))
-    quantity_used = 0 # Initially 0, usage can be updated later
-    
-    if not project_id:
-        flash("Project is required.", "danger")
-        return redirect(url_for('materials.view_material', material_id=material_id))
-    if quantity_allocated <= 0:
-        flash("Quantity allocated must be strictly greater than 0.", "danger")
-        return redirect(url_for('materials.view_material', material_id=material_id))
-        
-    # Check if this material is already allocated to this project
-    existing = db.session.execute(text("""
-        SELECT usage_id FROM material_usage 
-        WHERE project_id = :project_id AND material_id = :material_id
-    """), {'project_id': project_id, 'material_id': material_id}).fetchone()
-
-    if existing:
-        flash("This material is already allocated to the selected project. Please edit the existing allocation instead.", "warning")
-        return redirect(url_for('materials.view_material', material_id=material_id))
-        
-    # Phantom Inventory Check
-    inventory = db.session.execute(text("""
-        SELECT 
-            COALESCE((SELECT SUM(quantity) FROM purchase_items pi JOIN purchases p ON pi.purchase_id = p.purchase_id WHERE pi.material_id = :id AND p.status IN ('Delivered', 'Completed')), 0) -
-            COALESCE((SELECT SUM(quantity_allocated) FROM material_usage WHERE material_id = :id), 0) AS available
-    """), {'id': material_id}).fetchone()
-    
-    if inventory.available < quantity_allocated:
-        flash(f"Insufficient inventory. Only {inventory.available} units available.", "danger")
-        return redirect(url_for('materials.view_material', material_id=material_id))
-        
-    db.session.execute(text("""
-        INSERT INTO material_usage (project_id, material_id, quantity_allocated, quantity_used)
-        VALUES (:project_id, :material_id, :quantity_allocated, :quantity_used)
-    """), {
-        'project_id': project_id,
-        'material_id': material_id,
-        'quantity_allocated': quantity_allocated,
-        'quantity_used': quantity_used
-    })
-    db.session.commit()
-    flash("Material allocated to project successfully!", "success")
-    return redirect(url_for('materials.view_material', material_id=material_id))

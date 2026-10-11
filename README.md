@@ -5,7 +5,7 @@ BuildCore Infrastructure is a comprehensive, web-based database management syste
 ## Key Features
 
 - **Project Management**: Track multiple construction projects simultaneously, complete with dynamic progress calculation based on task completion.
-- **Dynamic Resource Allocation**: Allocate Workers, Heavy Equipment, and Raw Materials specifically to individual Project Tasks.
+- **Dynamic Resource Allocation**: Assign Workers and Heavy Equipment to individual Project Tasks; review project-level material allocations and usage in a consolidated Materials module.
 - **Automated Real-Time Status Tracking**: Using advanced SQL Views, the system dynamically calculates the availability status of Workers and Equipment based on their active task assignments. It is mathematically impossible for a resource's status to get "stuck".
 - **Master-Detail Procurement Pipeline**: A robust Purchasing module allowing managers to track purchase orders from Suppliers, complete with dynamic total calculations handled directly by the database engine.
 - **Relational Integrity**: Built on PostgreSQL utilizing strict Foreign Keys, `ON DELETE CASCADE` triggers, and `CHECK` constraints to absolutely guarantee data integrity and prevent orphaned records.
@@ -61,7 +61,6 @@ erDiagram
         varchar material_name
         varchar unit
         numeric unit_cost
-        numeric minimum_stock
     }
     suppliers {
         int supplier_id PK
@@ -164,7 +163,7 @@ erDiagram
 4. **Install dependencies**: `pip install -r requirements.txt`
 5. **Configure Environment Variables**:
    - Create a `.env` file in the root directory.
-   - Add your database URI: `DATABASE_URL=postgresql://username:password@localhost:5432/buildcore`
+    - Set `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, and `DB_NAME` in the `.env` file (see `config.py`).
 6. **Initialize the Database**: `python setup_db.py`
 7. **Create the Admin User**: Run `flask create-admin` and follow the interactive prompts to securely set up an administrator account.
 8. **Run the Server**: `flask run --debug`

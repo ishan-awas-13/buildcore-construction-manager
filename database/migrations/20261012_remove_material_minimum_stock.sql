@@ -1,0 +1,1 @@
+ALTER TABLE materials DROP COLUMN IF EXISTS minimum_stock;
