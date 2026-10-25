@@ -140,7 +140,8 @@ CREATE TABLE material_usage (
     material_id INT NOT NULL REFERENCES materials(material_id) ON DELETE CASCADE,
     quantity_allocated NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (quantity_allocated >= 0),
     quantity_used NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (quantity_used >= 0),
-    CONSTRAINT check_material_used CHECK (quantity_used <= quantity_allocated)
+    CONSTRAINT check_material_used CHECK (quantity_used <= quantity_allocated),
+    CONSTRAINT uq_project_material UNIQUE (project_id, material_id)
 );
 
 -- 12. Purchases

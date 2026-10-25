@@ -373,24 +373,34 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
+                                {% if selected_project_id == 'all' %}
+                                <th>Project</th>
+                                {% endif %}
                                 <th>Material</th>
                                 <th class="text-end">Purchased (Delivered)</th>
                                 <th class="text-end">Allocated</th>
                                 <th class="text-end">Used</th>
-                                <th class="text-end">Remaining (Purchased - Used)</th>
+                                <th class="text-end">Project Remaining Stock</th>
                                 <th class="text-end">Total Spend</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for m in data.material_usage_report %}
                             <tr>
+                                {% if selected_project_id == 'all' %}
+                                <td>
+                                    <a href="{{ url_for('projects.view_project', project_id=m.project_id) }}" class="text-decoration-none fw-bold">
+                                        {{ m.project_name }}
+                                    </a>
+                                </td>
+                                {% endif %}
                                 <td><strong>{{ m.material_name }}</strong></td>
                                 <td class="text-end">{{ "{:.2f}".format(m.total_purchased) }} {{ m.unit }}</td>
                                 <td class="text-end">{{ "{:.2f}".format(m.total_allocated) }} {{ m.unit }}</td>
                                 <td class="text-end">{{ "{:.2f}".format(m.total_used) }} {{ m.unit }}</td>
                                 <td class="text-end">
                                     {% set remaining = m.total_purchased - m.total_used %}
-                                    <span class="{% if remaining < 0 %}text-danger fw-bold{% elif remaining == 0 %}text-warning{% else %}text-success{% endif %}">
+                                    <span class="{% if remaining < 0 %}text-danger fw-bold{% elif remaining == 0 %}text-warning fw-bold{% else %}text-success fw-bold{% endif %}">
                                         {{ "{:.2f}".format(remaining) }} {{ m.unit }}
                                     </span>
                                 </td>
@@ -400,7 +410,7 @@
                         </tbody>
                         <tfoot class="table-secondary fw-bold">
                             <tr>
-                                <td colspan="5">Overall Material Procurement Cost</td>
+                                <td colspan="{% if selected_project_id == 'all' %}6{% else %}5{% endif %}">Overall Material Procurement Cost</td>
                                 <td class="text-end">₹{{ data.material_usage_report | sum(attribute='total_purchase_cost') | inr }}</td>
                             </tr>
                         </tfoot>

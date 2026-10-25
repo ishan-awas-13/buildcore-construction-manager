@@ -4,7 +4,8 @@ import sys
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from app import create_app, db
+from app import create_app
+from extensions import db
 from sqlalchemy import text
 from werkzeug.security import generate_password_hash, check_password_hash
 

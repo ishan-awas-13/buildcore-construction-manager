@@ -52,9 +52,10 @@
                         <thead>
                             <tr>
                                 <th>Project</th>
+                                <th>Delivered to Project</th>
                                 <th>Allocated</th>
-                                <th>Used</th>
-                                <th>Remaining</th>
+                                <th>Used / Consumed</th>
+                                <th>Remaining Project Stock</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -65,11 +66,22 @@
                                         <strong>{{ asgn.project_name }}</strong> <i class="bi bi-box-arrow-up-right"></i>
                                     </a>
                                 </td>
+                                <td>
+                                    {% if asgn.total_delivered > 0 %}
+                                        {{ "{:.2f}".format(asgn.total_delivered) }} {{ material.unit }}
+                                    {% else %}
+                                        <span class="text-muted">Direct / Initial</span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ "{:.2f}".format(asgn.quantity_allocated) }} {{ material.unit }}</td>
                                 <td>{{ "{:.2f}".format(asgn.quantity_used) }} {{ material.unit }}</td>
                                 <td>
-                                    {% set remaining = asgn.quantity_allocated - asgn.quantity_used %}
-                                    <span class="{% if remaining < 0 %}text-danger fw-bold{% elif remaining == 0 %}text-warning fw-bold{% else %}text-success{% endif %}">
+                                    {% if asgn.total_delivered > 0 %}
+                                        {% set remaining = asgn.total_delivered - asgn.quantity_used %}
+                                    {% else %}
+                                        {% set remaining = asgn.quantity_allocated - asgn.quantity_used %}
+                                    {% endif %}
+                                    <span class="{% if remaining < 0 %}text-danger fw-bold{% elif remaining == 0 %}text-warning fw-bold{% else %}text-success fw-bold{% endif %}">
                                         {{ "{:.2f}".format(remaining) }} {{ material.unit }}
                                     </span>
                                 </td>

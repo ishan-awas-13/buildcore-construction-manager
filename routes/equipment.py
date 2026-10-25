@@ -117,8 +117,18 @@ def assign_equipment(equipment_id):
     if end_date and start_date > end_date:
         flash("Start date cannot be after end date.", "danger")
         return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
+
+    # 1. Fetch equipment and reject if under Maintenance or Retired
+    equipment = db.session.execute(text("SELECT equipment_name, status, hourly_rate FROM equipment WHERE equipment_id = :id"), {'id': equipment_id}).fetchone()
+    if not equipment:
+        flash("Equipment not found.", "danger")
+        return redirect(url_for('equipment.list_equipment'))
         
-    # Overlap Check
+    if equipment.status in ('Maintenance', 'Retired'):
+        flash(f"Cannot assign {equipment.equipment_name}: Equipment is currently in '{equipment.status}' status.", "danger")
+        return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
+        
+    # 2. Overlap Check
     if end_date:
         overlap_sql = text("""
             SELECT 1 FROM equipment_assignments
@@ -140,8 +150,6 @@ def assign_equipment(equipment_id):
     if overlap:
         flash("This equipment is already assigned during the specified overlapping period.", "danger")
         return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
-        
-    equipment = db.session.execute(text("SELECT hourly_rate FROM equipment WHERE equipment_id = :id"), {'id': equipment_id}).fetchone()
 
     db.session.execute(text("""
         INSERT INTO equipment_assignments (equipment_id, project_task_id, start_date, end_date, hours_used, locked_hourly_rate)

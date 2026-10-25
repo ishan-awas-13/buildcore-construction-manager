@@ -96,7 +96,7 @@
       </div>
       <div class="modal-body">
         <p>Are you sure you want to delete <strong>{{ project.project_name }}</strong>?</p>
-        <p class="text-danger small mb-3">WARNING: This action is irreversible. All related tasks, worker assignments, equipment allocations, and material allocations will be permanently deleted.</p>
+        <p class="text-danger small mb-3">Enterprise Safety Notice: Projects with existing financial transactions, purchase orders, or logged labor/machinery cannot be deleted to maintain company audit compliance. Only draft projects with no historical activity can be deleted.</p>
         <div class="mb-3">
             <label class="form-label">Admin Password Required</label>
             <input type="password" class="form-control" name="admin_password" required placeholder="Enter admin password to confirm">
@@ -104,7 +104,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-danger">Permanently Delete</button>
+        <button type="submit" class="btn btn-danger">Confirm Delete</button>
       </div>
       </form>
     </div>

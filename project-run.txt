@@ -1,0 +1,47 @@
+======================================================================
+BUILDCORE - QUICK RUN GUIDE
+======================================================================
+
+1. PREREQUISITES
+   - PostgreSQL service running on localhost:5432
+   - Database name: buildcore_copy
+
+2. OPEN POWERSHELL / TERMINAL IN THIS DIRECTORY
+   Make sure your current folder is:
+   BuildCore_DB_Project_Corrected
+
+3. START THE APPLICATION
+   Run this single command:
+   
+   .\venv\Scripts\flask.exe run --debug
+
+   (Alternative command if preferred):
+   .\venv\Scripts\python.exe -m flask run --debug
+
+4. ACCESS IN BROWSER
+   URL: http://127.0.0.1:5000
+
+5. LOGIN CREDENTIALS
+   Username : admin
+   Password : admin
+
+6. RUN AUTOMATED VERIFICATION TESTS
+   - Run ALL 5 priority test suites in one go:
+     .\venv\Scripts\python.exe scratch\run_all_tests.py
+
+   - Run individual test suites:
+     Priority 1 (Materials Isolation & Consumption):
+     .\venv\Scripts\python.exe scratch\test_materials_priority1.py
+
+     Priority 2 (Financial Consistency & Locked Rates):
+     .\venv\Scripts\python.exe scratch\test_financial_priority2.py
+
+     Priority 3 (Resource Availability & Scheduling):
+     .\venv\Scripts\python.exe scratch\test_resource_availability_priority3.py
+
+     Priority 4 (Task Status & Progress Consistency):
+     .\venv\Scripts\python.exe scratch\test_task_consistency_priority4.py
+
+     Priority 5 (History Protection & Audit Safeguards):
+     .\venv\Scripts\python.exe scratch\test_history_protection_priority5.py
+======================================================================

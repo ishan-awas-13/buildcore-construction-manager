@@ -4,7 +4,8 @@ import sys
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from app import create_app, db
+from app import create_app
+from extensions import db
 from sqlalchemy import text
 
 app = create_app()
@@ -14,9 +15,10 @@ def run_migration():
         try:
             print("Applying Database Hardening Migration...")
             
-            # 1. Update material_usage constraint
-            print("Adding check constraint to material_usage (quantity_used <= quantity_allocated)...")
-            # First remove if it exists to make it idempotent
+            # 1. Update material_usage uniqueness and validation
+            print("Adding uniqueness and check constraint to material_usage...")
+            db.session.execute(text("ALTER TABLE material_usage DROP CONSTRAINT IF EXISTS uq_project_material"))
+            db.session.execute(text("ALTER TABLE material_usage ADD CONSTRAINT uq_project_material UNIQUE (project_id, material_id)"))
             db.session.execute(text("ALTER TABLE material_usage DROP CONSTRAINT IF EXISTS check_material_used"))
             db.session.execute(text("ALTER TABLE material_usage ADD CONSTRAINT check_material_used CHECK (quantity_used <= quantity_allocated)"))
             

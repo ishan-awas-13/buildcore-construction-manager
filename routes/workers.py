@@ -57,7 +57,6 @@ def add_worker():
         if daily_rate <= 0:
             flash('Daily rate must be greater than 0.', 'danger')
             return redirect(url_for('workers.add_worker'))
-        status = request.form['status']
         
         db.session.execute(text("""
             INSERT INTO workers (name, role, skill, phone, daily_rate, status)
@@ -86,7 +85,6 @@ def edit_worker(worker_id):
         if daily_rate <= 0:
             flash('Daily rate must be greater than 0.', 'danger')
             return redirect(url_for('workers.edit_worker', worker_id=worker_id))
-        status = request.form['status']
         
         db.session.execute(text("""
             UPDATE workers SET 
@@ -118,7 +116,61 @@ def assign_worker(worker_id):
         flash("Assigned hours must be greater than 0.", "danger")
         return redirect(url_for('workers.view_worker', worker_id=worker_id))
         
-    worker = db.session.execute(text("SELECT daily_rate FROM workers WHERE worker_id = :id"), {'id': worker_id}).fetchone()
+    worker = db.session.execute(text("SELECT worker_id, name, daily_rate, status FROM workers WHERE worker_id = :id"), {'id': worker_id}).fetchone()
+    if not worker:
+        flash("Worker not found.", "danger")
+        return redirect(url_for('workers.list_workers'))
+
+    # 1. Reject inactive or on-leave workers
+    if worker.status in ('On Leave', 'Inactive'):
+        flash(f"Cannot assign {worker.name}: Worker status is currently '{worker.status}'.", "danger")
+        return redirect(url_for('workers.view_worker', worker_id=worker_id))
+
+    # 2. Check if worker is already assigned to this exact task
+    existing = db.session.execute(text("""
+        SELECT 1 FROM task_workers 
+        WHERE worker_id = :w_id AND project_task_id = :pt_id
+    """), {'w_id': worker_id, 'pt_id': project_task_id}).fetchone()
+    if existing:
+        flash("Worker is already assigned to this task.", "warning")
+        return redirect(url_for('workers.view_worker', worker_id=worker_id))
+
+    # 3. Check for schedule conflicts with other active tasks
+    target_task = db.session.execute(text("""
+        SELECT pt.project_task_id, pt.start_date, pt.due_date, tt.task_name, p.project_name
+        FROM project_tasks pt
+        JOIN task_types tt ON pt.task_type_id = tt.task_type_id
+        JOIN projects p ON pt.project_id = p.project_id
+        WHERE pt.project_task_id = :pt_id
+    """), {'pt_id': project_task_id}).fetchone()
+
+    if target_task and target_task.start_date and target_task.due_date:
+        conflict = db.session.execute(text("""
+            SELECT tt.task_name, p.project_name, pt.start_date, pt.due_date
+            FROM task_workers tw
+            JOIN project_tasks pt ON tw.project_task_id = pt.project_task_id
+            JOIN task_types tt ON pt.task_type_id = tt.task_type_id
+            JOIN projects p ON pt.project_id = p.project_id
+            WHERE tw.worker_id = :worker_id
+              AND pt.project_task_id != :target_id
+              AND pt.status IN ('In Progress', 'Not Started')
+              AND pt.start_date <= :target_due_date
+              AND pt.due_date >= :target_start_date
+            LIMIT 1
+        """), {
+            'worker_id': worker_id,
+            'target_id': project_task_id,
+            'target_start_date': target_task.start_date,
+            'target_due_date': target_task.due_date
+        }).fetchone()
+
+        if conflict:
+            flash(
+                f"Schedule conflict: {worker.name} is already assigned to '{conflict.task_name}' on '{conflict.project_name}' "
+                f"({conflict.start_date.strftime('%Y-%m-%d')} to {conflict.due_date.strftime('%Y-%m-%d')}).",
+                "danger"
+            )
+            return redirect(url_for('workers.view_worker', worker_id=worker_id))
 
     db.session.execute(text("""
         INSERT INTO task_workers (project_task_id, worker_id, assigned_hours, locked_daily_rate)

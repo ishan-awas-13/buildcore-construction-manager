@@ -2,11 +2,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from sqlalchemy import text
 from app import db
+from datetime import datetime
 
 tasks_bp = Blueprint('tasks', __name__, url_prefix='/tasks')
 
 
-# ── LIST ALL TASK TYPES ──────────────────────────────────────
+# ─── LIST ALL TASK TYPES ──────────────────────────────────────────────
 @tasks_bp.route('/')
 @login_required
 def list_tasks():
@@ -22,7 +23,7 @@ def list_tasks():
     return render_template('tasks/list.html', task_types=task_types)
 
 
-# ── VIEW TASK TYPE DETAILS + ALL PROJECTS USING IT ───────────
+# ─── VIEW TASK TYPE DETAILS + ALL PROJECTS USING IT ───────────────────
 @tasks_bp.route('/<int:task_type_id>')
 @login_required
 def view_task(task_type_id):
@@ -49,14 +50,18 @@ def view_task(task_type_id):
     return render_template('tasks/view.html', task_type=task_type, project_instances=project_instances)
 
 
-# ── CREATE NEW TASK TYPE ─────────────────────────────────────
+# ─── CREATE NEW TASK TYPE ─────────────────────────────────────────────
 @tasks_bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def add_task():
     """Create a new reusable task type."""
     if request.method == 'POST':
-        task_name = request.form['task_name']
-        description = request.form.get('description', '')
+        task_name = request.form['task_name'].strip()
+        description = request.form.get('description', '').strip()
+
+        if not task_name:
+            flash('Task name is required.', 'danger')
+            return redirect(url_for('tasks.add_task'))
 
         db.session.execute(text("""
             INSERT INTO task_types (task_name, description)
@@ -69,14 +74,18 @@ def add_task():
     return render_template('tasks/form.html', task_type=None)
 
 
-# ── EDIT TASK TYPE ───────────────────────────────────────────
+# ─── EDIT TASK TYPE ───────────────────────────────────────────────────
 @tasks_bp.route('/<int:task_type_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_task(task_type_id):
     """Edit a task type's name and description."""
     if request.method == 'POST':
-        task_name = request.form['task_name']
-        description = request.form.get('description', '')
+        task_name = request.form['task_name'].strip()
+        description = request.form.get('description', '').strip()
+
+        if not task_name:
+            flash('Task name is required.', 'danger')
+            return redirect(url_for('tasks.edit_task', task_type_id=task_type_id))
 
         db.session.execute(text("""
             UPDATE task_types SET task_name=:task_name, description=:description
@@ -91,7 +100,7 @@ def edit_task(task_type_id):
     return render_template('tasks/form.html', task_type=task_type)
 
 
-# ── ASSIGN TASK TYPE TO A PROJECT ────────────────────────────
+# ─── ASSIGN TASK TYPE TO A PROJECT ────────────────────────────────────
 @tasks_bp.route('/<int:task_type_id>/assign', methods=['GET', 'POST'])
 @login_required
 def assign_task(task_type_id):
@@ -106,19 +115,40 @@ def assign_task(task_type_id):
         project_id = request.form['project_id']
         start_date = request.form['start_date']
         due_date = request.form['due_date']
-        status = request.form['status']
-        completion_percentage = request.form['completion_percentage']
-        description = request.form.get('description', '')
+        status = request.form['status'].strip()
+        description = request.form.get('description', '').strip()
+
+        try:
+            completion_percentage = float(request.form.get('completion_percentage', 0))
+        except (ValueError, TypeError):
+            flash("Invalid completion percentage.", "danger")
+            return redirect(url_for('tasks.assign_task', task_type_id=task_type_id))
+
+        if completion_percentage < 0 or completion_percentage > 100:
+            flash("Completion percentage must be between 0 and 100.", "danger")
+            return redirect(url_for('tasks.assign_task', task_type_id=task_type_id))
 
         # Timeline Boundary Validation
         project = db.session.execute(text("SELECT start_date, expected_end_date FROM projects WHERE project_id = :id"), {'id': project_id}).fetchone()
         if project:
-            from datetime import datetime
             sd = datetime.strptime(start_date, '%Y-%m-%d').date()
             dd = datetime.strptime(due_date, '%Y-%m-%d').date()
+            if sd > dd:
+                flash("Start date cannot be after due date.", "danger")
+                return redirect(url_for('tasks.assign_task', task_type_id=task_type_id))
             if sd < project.start_date or dd > project.expected_end_date:
                 flash(f"Task dates must fall within the project timeline ({project.start_date.strftime('%d %b %Y')} to {project.expected_end_date.strftime('%d %b %Y')}).", "danger")
                 return redirect(url_for('tasks.assign_task', task_type_id=task_type_id))
+
+        # Status and Progress Synchronization
+        if status == 'Completed' or completion_percentage >= 100.0:
+            status = 'Completed'
+            completion_percentage = 100.0
+        elif status == 'Not Started':
+            if completion_percentage > 0:
+                status = 'In Progress'
+            else:
+                completion_percentage = 0.0
 
         db.session.execute(text("""
             INSERT INTO project_tasks (project_id, task_type_id, start_date, due_date, status, completion_percentage, description)
@@ -146,7 +176,7 @@ def assign_task(task_type_id):
     return render_template('tasks/assign.html', task_type=task_type, projects=projects)
 
 
-# ── EDIT A PROJECT-SPECIFIC TASK INSTANCE ────────────────────
+# ─── EDIT A PROJECT-SPECIFIC TASK INSTANCE ────────────────────────────
 @tasks_bp.route('/project-task/<int:project_task_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_project_task(project_task_id):
@@ -154,9 +184,18 @@ def edit_project_task(project_task_id):
     if request.method == 'POST':
         start_date = request.form['start_date']
         due_date = request.form['due_date']
-        status = request.form['status']
-        completion_percentage = request.form['completion_percentage']
-        description = request.form.get('description', '')
+        status = request.form['status'].strip()
+        description = request.form.get('description', '').strip()
+
+        try:
+            completion_percentage = float(request.form.get('completion_percentage', 0))
+        except (ValueError, TypeError):
+            flash("Invalid completion percentage.", "danger")
+            return redirect(url_for('tasks.edit_project_task', project_task_id=project_task_id))
+
+        if completion_percentage < 0 or completion_percentage > 100:
+            flash("Completion percentage must be between 0 and 100.", "danger")
+            return redirect(url_for('tasks.edit_project_task', project_task_id=project_task_id))
 
         # Timeline Boundary Validation
         project_info = db.session.execute(text("""
@@ -166,12 +205,24 @@ def edit_project_task(project_task_id):
             WHERE pt.project_task_id = :id
         """), {'id': project_task_id}).fetchone()
         if project_info:
-            from datetime import datetime
             sd = datetime.strptime(start_date, '%Y-%m-%d').date()
             dd = datetime.strptime(due_date, '%Y-%m-%d').date()
+            if sd > dd:
+                flash("Start date cannot be after due date.", "danger")
+                return redirect(url_for('tasks.edit_project_task', project_task_id=project_task_id))
             if sd < project_info.start_date or dd > project_info.expected_end_date:
                 flash(f"Task dates must fall within the project timeline ({project_info.start_date.strftime('%d %b %Y')} to {project_info.expected_end_date.strftime('%d %b %Y')}).", "danger")
                 return redirect(url_for('tasks.edit_project_task', project_task_id=project_task_id))
+
+        # Status and Progress Synchronization
+        if status == 'Completed' or completion_percentage >= 100.0:
+            status = 'Completed'
+            completion_percentage = 100.0
+        elif status == 'Not Started':
+            if completion_percentage > 0:
+                status = 'In Progress'
+            else:
+                completion_percentage = 0.0
 
         db.session.execute(text("""
             UPDATE project_tasks SET

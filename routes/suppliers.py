@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from sqlalchemy import text
-from app import db
+from extensions import db
 
 suppliers_bp = Blueprint('suppliers', __name__, url_prefix='/suppliers')
 

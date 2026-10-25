@@ -5,7 +5,11 @@ from app import db
 
 financials_bp = Blueprint('financials', __name__, url_prefix='/financials')
 
-# ─── Global Financials Overview (all projects) ───
+# Operational categories that are strictly tracked via assignments and POs
+# to prevent double-counting in project budgets.
+OPERATIONAL_EXPENSE_TYPES = {'labour', 'labor', 'equipment', 'material', 'materials'}
+
+# ─── Global Financials Overview (all projects) ────────────────────────
 @financials_bp.route('/')
 @login_required
 def list_financials():
@@ -21,7 +25,7 @@ def list_financials():
     projects = db.session.execute(sql).fetchall()
     return render_template('financials/list.html', projects=projects)
 
-# ─── Project-Specific Financial Dashboard ───
+# ─── Project-Specific Financial Dashboard ─────────────────────────────
 @financials_bp.route('/project/<int:project_id>')
 @login_required
 def project_dashboard(project_id):
@@ -83,24 +87,33 @@ def project_dashboard(project_id):
         filter_category=filter_category
     )
 
-# ─── Miscellaneous Expense CRUD ───
+# ─── Miscellaneous Expense CRUD ───────────────────────────────────────
 @financials_bp.route('/project/<int:project_id>/misc/add', methods=['GET', 'POST'])
 @login_required
 def add_misc_expense(project_id):
     if request.method == 'POST':
         expense_type = request.form['expense_type'].strip()
-        amount = float(request.form['amount'])
         expense_date = request.form['expense_date']
         description = request.form.get('description', '').strip()
         
-        if amount < 0:
-            flash('Amount cannot be negative.', 'danger')
+        try:
+            amount = float(request.form['amount'])
+        except (ValueError, TypeError):
+            flash('Please enter a valid numeric amount.', 'danger')
+            return redirect(url_for('financials.add_misc_expense', project_id=project_id))
+        
+        if amount <= 0:
+            flash('Expense amount must be strictly greater than zero.', 'danger')
             return redirect(url_for('financials.add_misc_expense', project_id=project_id))
         if not expense_type:
             flash('Expense type cannot be empty.', 'danger')
             return redirect(url_for('financials.add_misc_expense', project_id=project_id))
 
-        
+        # Guard against double-counting operational categories tracked via tasks/POs
+        if expense_type.lower() in OPERATIONAL_EXPENSE_TYPES:
+            flash('Operational expenses (Labour, Equipment, Materials) are automatically tracked via Task Assignments and Purchase Orders. For site or administrative overhead, please select an approved miscellaneous category.', 'danger')
+            return redirect(url_for('financials.add_misc_expense', project_id=project_id))
+
         sql = text("""
             INSERT INTO expenses (project_id, expense_type, amount, expense_date, description)
             VALUES (:project_id, :expense_type, :amount, :expense_date, :description)
@@ -137,15 +150,25 @@ def edit_misc_expense(expense_id):
     
     if request.method == 'POST':
         expense_type = request.form['expense_type'].strip()
-        amount = float(request.form['amount'])
         expense_date = request.form['expense_date']
         description = request.form.get('description', '').strip()
         
-        if amount < 0:
-            flash('Amount cannot be negative.', 'danger')
+        try:
+            amount = float(request.form['amount'])
+        except (ValueError, TypeError):
+            flash('Please enter a valid numeric amount.', 'danger')
+            return redirect(url_for('financials.edit_misc_expense', expense_id=expense_id))
+        
+        if amount <= 0:
+            flash('Expense amount must be strictly greater than zero.', 'danger')
             return redirect(url_for('financials.edit_misc_expense', expense_id=expense_id))
         if not expense_type:
             flash('Expense type cannot be empty.', 'danger')
+            return redirect(url_for('financials.edit_misc_expense', expense_id=expense_id))
+        
+        # Guard against double-counting operational categories tracked via tasks/POs
+        if expense_type.lower() in OPERATIONAL_EXPENSE_TYPES:
+            flash('Operational expenses (Labour, Equipment, Materials) are automatically tracked via Task Assignments and Purchase Orders. For site or administrative overhead, please select an approved miscellaneous category.', 'danger')
             return redirect(url_for('financials.edit_misc_expense', expense_id=expense_id))
         
         sql = text("""

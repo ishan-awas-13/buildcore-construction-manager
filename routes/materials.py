@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from sqlalchemy import text
-from app import db
+from extensions import db
 
 materials_bp = Blueprint('materials', __name__, url_prefix='/materials')
 
@@ -34,13 +34,23 @@ def view_material(material_id):
         flash("Material not found.", "danger")
         return redirect(url_for('materials.list_materials'))
         
-    # Fetch all project allocations for this material
+    # Fetch all project allocations and delivered purchases for this material
     allocations = db.session.execute(text("""
-        SELECT mu.usage_id, mu.quantity_allocated, mu.quantity_used,
-               p.project_id, p.project_name
-        FROM material_usage mu
-        JOIN projects p ON mu.project_id = p.project_id
-        WHERE mu.material_id = :id
+        SELECT p.project_id, p.project_name,
+               COALESCE(purchased.total_delivered, 0) AS total_delivered,
+               COALESCE(mu.quantity_allocated, 0) AS quantity_allocated,
+               COALESCE(mu.quantity_used, 0) AS quantity_used,
+               mu.usage_id
+        FROM projects p
+        LEFT JOIN (
+            SELECT pur.project_id, SUM(pi.quantity) AS total_delivered
+            FROM purchase_items pi
+            JOIN purchases pur ON pi.purchase_id = pur.purchase_id
+            WHERE pur.status IN ('Delivered', 'Completed') AND pi.material_id = :id
+            GROUP BY pur.project_id
+        ) purchased ON p.project_id = purchased.project_id
+        LEFT JOIN material_usage mu ON p.project_id = mu.project_id AND mu.material_id = :id
+        WHERE COALESCE(purchased.total_delivered, 0) > 0 OR COALESCE(mu.quantity_allocated, 0) > 0
         ORDER BY p.project_name
     """), {'id': material_id}).fetchall()
     

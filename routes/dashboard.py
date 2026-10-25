@@ -17,12 +17,16 @@ def index():
         FROM projects
     """)).fetchone()
 
-    # 2. Total Workers, Available Equipment
+    # 2. Total Workers, Available Equipment (computed from active assignments view)
     workers_count = db.session.execute(text("SELECT COUNT(*) FROM workers")).scalar()
-    equipment_count = db.session.execute(text("SELECT COUNT(*) FROM equipment WHERE status = 'Available'")).scalar()
+    equipment_count = db.session.execute(text("SELECT COUNT(*) FROM equipment_status_view WHERE computed_status = 'Available'")).scalar()
 
-    # 3. Total Material Purchases, Total Project Expenses
-    total_purchases = db.session.execute(text("SELECT COALESCE(SUM(total_amount), 0) FROM purchases_with_total_view")).scalar()
+    # 3. Total Material Purchases (Delivered/Completed only), Total Project Expenses
+    total_purchases = db.session.execute(text("""
+        SELECT COALESCE(SUM(total_amount), 0) 
+        FROM purchases_with_total_view 
+        WHERE status IN ('Delivered', 'Completed')
+    """)).scalar()
     total_expenses = db.session.execute(text("SELECT COALESCE(SUM(amount), 0) FROM expenses")).scalar()
 
     # 4. List of active projects (with progress from our view)

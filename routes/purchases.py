@@ -97,6 +97,41 @@ def edit_purchase(purchase_id):
             flash('Invalid status selected.', 'danger')
             return redirect(url_for('purchases.edit_purchase', purchase_id=purchase_id))
         
+        # HISTORY & INVENTORY GUARD: If changing away from Delivered/Completed,
+        # verify that materials from this purchase order are not already allocated or consumed
+        existing_po = db.session.execute(text("SELECT project_id, status FROM purchases WHERE purchase_id = :id"), {'id': purchase_id}).fetchone()
+        if existing_po and existing_po.status in ('Delivered', 'Completed') and status not in ('Delivered', 'Completed'):
+            items = db.session.execute(text("""
+                SELECT pi.material_id, pi.quantity, m.material_name, m.unit
+                FROM purchase_items pi
+                JOIN materials m ON pi.material_id = m.material_id
+                WHERE pi.purchase_id = :id
+            """), {'id': purchase_id}).fetchall()
+            
+            for it in items:
+                alloc_row = db.session.execute(text("""
+                    SELECT quantity_allocated FROM material_usage
+                    WHERE project_id = :p AND material_id = :m
+                """), {'p': existing_po.project_id, 'm': it.material_id}).fetchone()
+                allocated_qty = float(alloc_row.quantity_allocated) if alloc_row else 0.0
+
+                total_deliv = db.session.execute(text("""
+                    SELECT COALESCE(SUM(pi.quantity), 0)
+                    FROM purchase_items pi
+                    JOIN purchases p ON pi.purchase_id = p.purchase_id
+                    WHERE p.project_id = :p AND pi.material_id = :m AND p.status IN ('Delivered', 'Completed')
+                """), {'p': existing_po.project_id, 'm': it.material_id}).scalar() or 0.0
+
+                remaining_deliv = float(total_deliv) - float(it.quantity)
+                if remaining_deliv < allocated_qty:
+                    flash(
+                        f"Cannot change order status to '{status}': {allocated_qty:.2f} {it.unit} of {it.material_name} "
+                        "are already allocated on this project. Cancelling or reverting this order would cause "
+                        "project allocations to exceed delivered stock.",
+                        'danger'
+                    )
+                    return redirect(url_for('purchases.view_purchase', purchase_id=purchase_id))
+
         sql = text("""
             UPDATE purchases 
             SET supplier_id=:supplier_id, project_id=:project_id, purchase_date=:purchase_date, status=:status
@@ -119,9 +154,22 @@ def edit_purchase(purchase_id):
 @purchases_bp.route('/<int:purchase_id>/add_item', methods=['POST'])
 @login_required
 def add_purchase_item(purchase_id):
-    material_id = request.form['material_id']
-    quantity = float(request.form['quantity'])
-    unit_price = float(request.form['unit_price'])
+    purchase = db.session.execute(text("SELECT status FROM purchases WHERE purchase_id = :id"), {'id': purchase_id}).fetchone()
+    if not purchase:
+        flash('Purchase order not found.', 'danger')
+        return redirect(url_for('purchases.list_purchases'))
+
+    if purchase.status == 'Cancelled':
+        flash('Cannot add items to a cancelled purchase order.', 'danger')
+        return redirect(url_for('purchases.view_purchase', purchase_id=purchase_id))
+
+    material_id = request.form.get('material_id')
+    try:
+        quantity = float(request.form.get('quantity', 0))
+        unit_price = float(request.form.get('unit_price', 0))
+    except (ValueError, TypeError):
+        flash('Please enter valid numeric values for quantity and price.', 'danger')
+        return redirect(url_for('purchases.view_purchase', purchase_id=purchase_id))
     
     if quantity <= 0:
         flash('Quantity must be strictly greater than 0.', 'danger')
@@ -146,13 +194,46 @@ def add_purchase_item(purchase_id):
 @purchases_bp.route('/item/<int:item_id>/delete', methods=['POST'])
 @login_required
 def delete_purchase_item(item_id):
-    # Need to get purchase_id to redirect back
-    sql_get = text("SELECT purchase_id FROM purchase_items WHERE purchase_item_id = :id")
-    result = db.session.execute(sql_get, {'id': item_id}).fetchone()
-    if result:
-        purchase_id = result.purchase_id
-        db.session.execute(text("DELETE FROM purchase_items WHERE purchase_item_id = :id"), {'id': item_id})
-        db.session.commit()
-        flash('Item removed.', 'success')
-        return redirect(url_for('purchases.view_purchase', purchase_id=purchase_id))
-    return redirect(url_for('purchases.list_purchases'))
+    sql_get = text("""
+        SELECT pi.purchase_id, pi.material_id, pi.quantity, p.project_id, p.status, m.material_name, m.unit
+        FROM purchase_items pi
+        JOIN purchases p ON pi.purchase_id = p.purchase_id
+        JOIN materials m ON pi.material_id = m.material_id
+        WHERE pi.purchase_item_id = :id
+    """)
+    item = db.session.execute(sql_get, {'id': item_id}).fetchone()
+    if not item:
+        flash('Item not found.', 'danger')
+        return redirect(url_for('purchases.list_purchases'))
+
+    purchase_id = item.purchase_id
+
+    # INVENTORY INTEGRITY GUARD: If order is Delivered/Completed, check if removing this item violates allocations
+    if item.status in ('Delivered', 'Completed'):
+        alloc_row = db.session.execute(text("""
+            SELECT quantity_allocated FROM material_usage
+            WHERE project_id = :p AND material_id = :m
+        """), {'p': item.project_id, 'm': item.material_id}).fetchone()
+        allocated_qty = float(alloc_row.quantity_allocated) if alloc_row else 0.0
+
+        total_deliv = db.session.execute(text("""
+            SELECT COALESCE(SUM(pi.quantity), 0)
+            FROM purchase_items pi
+            JOIN purchases p ON pi.purchase_id = p.purchase_id
+            WHERE p.project_id = :p AND pi.material_id = :m AND p.status IN ('Delivered', 'Completed')
+        """), {'p': item.project_id, 'm': item.material_id}).scalar() or 0.0
+
+        remaining_deliv = float(total_deliv) - float(item.quantity)
+        if remaining_deliv < allocated_qty:
+            flash(
+                f"Cannot remove {item.material_name} from this order: {allocated_qty:.2f} {item.unit} "
+                "are already allocated to the project. Deleting this line item would cause project "
+                "allocations to exceed delivered stock.",
+                'danger'
+            )
+            return redirect(url_for('purchases.view_purchase', purchase_id=purchase_id))
+
+    db.session.execute(text("DELETE FROM purchase_items WHERE purchase_item_id = :id"), {'id': item_id})
+    db.session.commit()
+    flash('Item removed from purchase order.', 'success')
+    return redirect(url_for('purchases.view_purchase', purchase_id=purchase_id))

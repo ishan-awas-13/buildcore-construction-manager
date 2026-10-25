@@ -74,4 +74,35 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.getElementById('status');
+    const pctInput = document.getElementById('completion_percentage');
+    if (!statusSelect || !pctInput) return;
+
+    statusSelect.addEventListener('change', function() {
+        if (this.value === 'Completed') {
+            pctInput.value = 100;
+        } else if (this.value === 'Not Started') {
+            pctInput.value = 0;
+        } else if (this.value === 'In Progress' && parseFloat(pctInput.value) >= 100) {
+            pctInput.value = 99;
+        }
+    });
+
+    pctInput.addEventListener('input', function() {
+        const val = parseFloat(this.value);
+        if (val >= 100) {
+            statusSelect.value = 'Completed';
+        } else if (val === 0 && statusSelect.value === 'Completed') {
+            statusSelect.value = 'Not Started';
+        } else if (val > 0 && statusSelect.value === 'Not Started') {
+            statusSelect.value = 'In Progress';
+        } else if (val < 100 && statusSelect.value === 'Completed') {
+            statusSelect.value = 'In Progress';
+        }
+    });
+});
+</script>
 {% endblock %}

@@ -71,11 +71,11 @@ def dashboard():
     """), params).fetchall()
 
     # ==========================================
-    # REPORT 3: RESOURCE UTILIZATION
+    # REPORT 3: RESOURCE UTILIZATION (Using locked historical rates)
     # ==========================================
     worker_utilization = db.session.execute(text("""
         SELECT w.name as worker_name, p.project_name, tt.task_name, tw.assigned_hours, 
-               ROUND((tw.assigned_hours / 8.0) * w.daily_rate, 2) as labour_cost
+               ROUND((tw.assigned_hours / 8.0) * COALESCE(NULLIF(tw.locked_daily_rate, 0), w.daily_rate), 2) as labour_cost
         FROM task_workers tw
         JOIN workers w ON tw.worker_id = w.worker_id
         JOIN project_tasks pt ON tw.project_task_id = pt.project_task_id
@@ -87,7 +87,7 @@ def dashboard():
 
     equipment_utilization = db.session.execute(text("""
         SELECT e.equipment_name, e.equipment_type, p.project_name, tt.task_name, ea.hours_used,
-               ROUND(ea.hours_used * e.hourly_rate, 2) as equipment_cost
+               ROUND(ea.hours_used * COALESCE(NULLIF(ea.locked_hourly_rate, 0), e.hourly_rate), 2) as equipment_cost
         FROM equipment_assignments ea
         JOIN equipment e ON ea.equipment_id = e.equipment_id
         JOIN project_tasks pt ON ea.project_task_id = pt.project_task_id
@@ -102,27 +102,27 @@ def dashboard():
     # ==========================================
     material_usage_report = db.session.execute(text("""
         SELECT 
+            p.project_id, p.project_name,
             m.material_id, m.material_name, m.unit,
             COALESCE(purchased.total_purchased, 0) as total_purchased,
             COALESCE(purchased.total_cost, 0) as total_purchase_cost,
-            COALESCE(usage.total_allocated, 0) as total_allocated,
-            COALESCE(usage.total_used, 0) as total_used
-        FROM materials m
+            COALESCE(mu.quantity_allocated, 0) as total_allocated,
+            COALESCE(mu.quantity_used, 0) as total_used
+        FROM projects p
+        CROSS JOIN materials m
         LEFT JOIN (
-            SELECT pi.material_id, SUM(pi.quantity) as total_purchased, SUM(pi.quantity * pi.unit_price) as total_cost
+            SELECT pur.project_id, pi.material_id, 
+                   SUM(pi.quantity) as total_purchased, 
+                   SUM(pi.quantity * pi.unit_price) as total_cost
             FROM purchase_items pi
             JOIN purchases pur ON pi.purchase_id = pur.purchase_id
-            WHERE pur.status IN ('Delivered', 'Completed') 
-              AND (:project_id IS NULL OR pur.project_id = :project_id)
-            GROUP BY pi.material_id
-        ) purchased ON m.material_id = purchased.material_id
-        LEFT JOIN (
-            SELECT mu.material_id, SUM(mu.quantity_allocated) as total_allocated, SUM(mu.quantity_used) as total_used
-            FROM material_usage mu
-            WHERE (:project_id IS NULL OR mu.project_id = :project_id)
-            GROUP BY mu.material_id
-        ) usage ON m.material_id = usage.material_id
-        WHERE COALESCE(purchased.total_purchased, 0) > 0 OR COALESCE(usage.total_allocated, 0) > 0
+            WHERE pur.status IN ('Delivered', 'Completed')
+            GROUP BY pur.project_id, pi.material_id
+        ) purchased ON p.project_id = purchased.project_id AND m.material_id = purchased.material_id
+        LEFT JOIN material_usage mu ON p.project_id = mu.project_id AND m.material_id = mu.material_id
+        WHERE (:project_id IS NULL OR p.project_id = :project_id)
+          AND (COALESCE(purchased.total_purchased, 0) > 0 OR COALESCE(mu.quantity_allocated, 0) > 0)
+        ORDER BY p.project_name, m.material_name
     """), params).fetchall()
     
     procurement_details = db.session.execute(text("""
