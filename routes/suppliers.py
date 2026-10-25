@@ -49,7 +49,7 @@ def view_supplier(supplier_id):
         return redirect(url_for('suppliers.list_suppliers'))
         
     purchases_sql = text("""
-        SELECT p.purchase_id, p.purchase_date, p.status, p.total_amount, pr.project_name
+        SELECT p.purchase_id, p.purchase_date, p.status, p.total_amount, pr.project_name, p.project_id
         FROM purchases_with_total_view p
         JOIN projects pr ON p.project_id = pr.project_id
         WHERE p.supplier_id = :id

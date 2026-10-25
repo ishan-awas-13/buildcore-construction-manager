@@ -1,165 +1,157 @@
 {% extends "base.html" %}
 
-{% block title %}{{ worker.name }} - BuildCore Infrastructure{% endblock %}
+{% block title %}{{ worker.name }} - Workers Register - BuildCore Infrastructure{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Worker Profile</h1>
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{{ url_for('workers.list_workers') }}" class="text-decoration-none">Workers Register</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ worker.name }}</li>
+            </ol>
+        </nav>
+        <h1 class="h2 mb-0">{{ worker.name }}</h1>
+    </div>
     <div class="btn-toolbar mb-2 mb-md-0">
         <a href="{{ url_for('workers.list_workers') }}" class="btn btn-sm btn-outline-secondary me-2">
-            <i class="bi bi-arrow-left"></i> Back to Workers
+            <i class="bi bi-arrow-left"></i> Back to Register
         </a>
         <a href="{{ url_for('workers.edit_worker', worker_id=worker.worker_id) }}" class="btn btn-sm btn-primary">
-            <i class="bi bi-pencil"></i> Edit Worker
+            <i class="bi bi-pencil me-1"></i> Edit Worker
         </a>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">{{ worker.name }}</h5>
+<div class="row g-4">
+    <div class="col-lg-7">
+        <!-- Worker Profile Details Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-person-vcard text-primary me-2"></i>Worker Profile</h5>
             </div>
             <div class="card-body">
                 <div class="row mb-3">
                     <div class="col-sm-4 text-muted">Worker ID</div>
-                    <div class="col-sm-8">{{ worker.worker_id }}</div>
+                    <div class="col-sm-8 fw-bold">#{{ worker.worker_id }}</div>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-sm-4 text-muted">Role</div>
-                    <div class="col-sm-8">{{ worker.role }}</div>
+                    <div class="col-sm-4 text-muted">Role / Trade</div>
+                    <div class="col-sm-8 fw-semibold">{{ worker.role }}</div>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-sm-4 text-muted">Skill</div>
+                    <div class="col-sm-4 text-muted">Specialized Skill</div>
                     <div class="col-sm-8">{{ worker.skill }}</div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-sm-4 text-muted">Phone Number</div>
-                    <div class="col-sm-8">{{ worker.phone or 'N/A' }}</div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-sm-4 text-muted">Daily Rate</div>
-                    <div class="col-sm-8">₹{{ worker.daily_rate | inr }}</div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-sm-4 text-muted">Current Status</div>
                     <div class="col-sm-8">
-                        <span class="badge {% if worker.status == 'Available' %}bg-success{% elif worker.status == 'Assigned' %}bg-primary{% else %}bg-secondary{% endif %}">
+                        {% if worker.phone %}
+                        <a href="tel:{{ worker.phone }}" class="text-decoration-none"><i class="bi bi-telephone me-1"></i>{{ worker.phone }}</a>
+                        {% else %}
+                        <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 text-muted">Daily Wage Rate</div>
+                    <div class="col-sm-8 text-success fw-bold">₹{{ worker.daily_rate | inr }} / day</div>
+                </div>
+                <div class="row mb-0">
+                    <div class="col-sm-4 text-muted">Current Availability</div>
+                    <div class="col-sm-8">
+                        <span class="badge {% if worker.status == 'Available' %}bg-success{% elif worker.status == 'Assigned' %}bg-primary{% elif worker.status == 'On Leave' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
                             {{ worker.status }}
                         </span>
-                    </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Assignments</h5>
-                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-toggle="modal" data-bs-target="#assignModal">
-                    <i class="bi bi-plus-circle"></i> Assign
-                </button>
+
+        <!-- Currently Active Assignment Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-geo-alt-fill text-danger me-2"></i>Current Deployment</h5>
             </div>
-            <div class="card-body p-0">
-                {% if assignments %}
-                <ul class="list-group list-group-flush">
-                    {% for a in assignments %}
-                    <li class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1"><a href="{{ url_for('projects.view_project', project_id=a.project_id) }}" class="text-decoration-none">{{ a.project_name }}</a></h6>
-                            <small class="badge {% if a.task_status == 'Completed' %}bg-success{% elif a.task_status == 'In Progress' %}bg-primary{% else %}bg-secondary{% endif %}">{{ a.task_status }}</small>
+            <div class="card-body">
+                {% if current_assignment %}
+                <div class="p-3 bg-light rounded border">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="mb-1 fw-bold text-dark">
+                                <a href="{{ url_for('projects.project_workers_tab', project_id=current_assignment.project_id) }}" class="text-decoration-none">
+                                    {{ current_assignment.project_name }} <i class="bi bi-box-arrow-up-right small"></i>
+                                </a>
+                            </h6>
+                            <span class="text-muted">Task: <strong>{{ current_assignment.task_name }}</strong></span>
                         </div>
-                        <p class="mb-1 small">{{ a.task_name }}</p>
-                        <small class="text-muted">{{ a.start_date.strftime('%b %d') }} - {{ a.due_date.strftime('%b %d, %Y') }}</small>
-                    </li>
-                    {% endfor %}
-                </ul>
+                        <span class="badge {% if current_assignment.task_status == 'In Progress' %}bg-primary{% else %}bg-secondary{% endif %}">
+                            {{ current_assignment.task_status }}
+                        </span>
+                    </div>
+                    <div class="small text-muted mb-2">
+                        <i class="bi bi-calendar-event me-1"></i>
+                        {{ current_assignment.start_date.strftime('%d %b %Y') if current_assignment.start_date else 'N/A' }}
+                        &ndash;
+                        {{ current_assignment.due_date.strftime('%d %b %Y') if current_assignment.due_date else 'N/A' }}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top small">
+                        <span>Assigned Hours: <strong>{{ "{:.1f}".format(current_assignment.assigned_hours) }} hrs</strong></span>
+                        <a href="{{ url_for('projects.project_workers_tab', project_id=current_assignment.project_id) }}" class="btn btn-sm btn-outline-primary py-0 px-2">
+                            Open Project Workspace <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
                 {% else %}
                 <div class="p-3 text-center text-muted">
-                    No task assignments found.
+                    <i class="bi bi-person-check fs-2 d-block mb-1 text-success"></i>
+                    Worker is not currently deployed to an active task.
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
-</div>
-
-<!-- Assign Worker Modal -->
-<div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form action="{{ url_for('workers.assign_worker', worker_id=worker.worker_id) }}" method="POST">
-      <div class="modal-header">
-        <h5 class="modal-title" id="assignModalLabel">Assign {{ worker.name }} to Task</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-            <label class="form-label">Select Project</label>
-            <select class="form-select" id="projectSelect" required>
-                <option value="">-- Select Project --</option>
-                {% for p in active_projects %}
-                <option value="{{ p.project_id }}">{{ p.project_name }}</option>
-                {% endfor %}
-            </select>
+    
+    <div class="col-lg-5">
+        <!-- Assignment History Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history text-secondary me-2"></i>Assignment History</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if assignments %}
+                <ul class="list-group list-group-flush">
+                    {% for a in assignments %}
+                    <li class="list-group-item py-3">
+                        <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                            <h6 class="mb-0">
+                                <a href="{{ url_for('projects.project_workers_tab', project_id=a.project_id) }}" class="text-decoration-none fw-bold">
+                                    {{ a.project_name }} <i class="bi bi-box-arrow-up-right small"></i>
+                                </a>
+                            </h6>
+                            <span class="badge {% if a.task_status == 'Completed' %}bg-success{% elif a.task_status == 'In Progress' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {{ a.task_status }}
+                            </span>
+                        </div>
+                        <p class="mb-1 text-muted small"><i class="bi bi-list-task me-1"></i>{{ a.task_name }} &bull; {{ "{:.1f}".format(a.assigned_hours) }} hrs</p>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar3 me-1"></i>
+                            {{ a.start_date.strftime('%b %d') if a.start_date else '' }} &ndash; {{ a.due_date.strftime('%b %d, %Y') if a.due_date else '' }}
+                        </small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-journal-x fs-2 d-block mb-2"></i>
+                    No historical assignments on record for this worker.
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-light small text-muted">
+                <i class="bi bi-info-circle me-1"></i> To deploy this worker, open the target <a href="{{ url_for('projects.list_projects') }}">Project Workspace</a> and assign them under the Workers tab.
+            </div>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Select Task</label>
-            <select class="form-select" name="project_task_id" id="taskSelect" required disabled>
-                <option value="">-- Select Project First --</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Hours Worked</label>
-            <input type="number" step="0.5" min="0" class="form-control" name="assigned_hours" value="0">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-primary">Assign Worker</button>
-      </div>
-      </form>
     </div>
-  </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const projectSelect = document.getElementById('projectSelect');
-    const taskSelect = document.getElementById('taskSelect');
-
-    projectSelect.addEventListener('change', function() {
-        const projectId = this.value;
-        if (!projectId) {
-            taskSelect.innerHTML = '<option value="">-- Select Project First --</option>';
-            taskSelect.disabled = true;
-            return;
-        }
-
-        taskSelect.innerHTML = '<option value="">Loading tasks...</option>';
-        taskSelect.disabled = true;
-
-        fetch(`/projects/${projectId}/tasks/api`)
-            .then(response => response.json())
-            .then(tasks => {
-                taskSelect.innerHTML = '<option value="">-- Select Task --</option>';
-                if (tasks.length === 0) {
-                    taskSelect.innerHTML = '<option value="">No active tasks in this project.</option>';
-                } else {
-                    tasks.forEach(task => {
-                        taskSelect.innerHTML += `<option value="${task.id}">${task.name} (${task.status})</option>`;
-                    });
-                    taskSelect.disabled = false;
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                taskSelect.innerHTML = '<option value="">Error loading tasks.</option>';
-            });
-    });
-});
-</script>
 {% endblock %}

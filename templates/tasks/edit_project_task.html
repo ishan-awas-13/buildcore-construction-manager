@@ -6,8 +6,8 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Edit Project Task</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="{{ url_for('tasks.view_task', task_type_id=pt.task_type_id) }}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Task Type
+        <a href="{{ url_for('projects.project_tasks_tab', project_id=pt.project_id) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Project Tasks
         </a>
     </div>
 </div>

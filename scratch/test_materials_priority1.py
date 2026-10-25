@@ -166,10 +166,9 @@ def run_tests():
         # -----------------------------------------------------------
         # TEST 5: HTTP Route Rendering
         # -----------------------------------------------------------
-        print("\n[TEST 5] Verifying HTTP Route Rendering (No 500s)...")
-        res_proj = client.get('/projects/1')
-        assert res_proj.status_code == 200, f"Expected 200 for /projects/1, got {res_proj.status_code}"
-        assert b"Project Materials &amp; Consumption" in res_proj.data or b"Project Materials & Consumption" in res_proj.data
+        res_proj = client.get('/projects/1/materials')
+        assert res_proj.status_code == 200, f"Expected 200 for /projects/1/materials, got {res_proj.status_code}"
+        assert b"Project Materials" in res_proj.data
 
         res_mat = client.get('/materials/2')
         assert res_mat.status_code == 200, f"Expected 200 for /materials/2, got {res_mat.status_code}"

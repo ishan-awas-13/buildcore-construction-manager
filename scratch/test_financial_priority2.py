@@ -192,7 +192,7 @@ def run_tests():
         res_fin = client.get('/financials/')
         assert res_fin.status_code == 200, f"Financials list failed with {res_fin.status_code}"
 
-        res_proj_fin = client.get('/financials/project/1')
+        res_proj_fin = client.get('/financials/project/1', follow_redirects=True)
         assert res_proj_fin.status_code == 200, f"Project 1 financials failed with {res_proj_fin.status_code}"
 
         res_rep = client.get('/reports/?project_id=1')

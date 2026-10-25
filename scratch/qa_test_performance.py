@@ -180,7 +180,7 @@ def run_tests():
             latencies = []
             for _ in range(5):
                 start_t = time.perf_counter()
-                resp = client.get(url)
+                resp = client.get(url, follow_redirects=True)
                 end_t = time.perf_counter()
                 assert resp.status_code == 200, f"Benchmark request failed for {url} with {resp.status_code}"
                 latencies.append((end_t - start_t) * 1000.0)

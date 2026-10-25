@@ -62,8 +62,8 @@
                             {% for asgn in allocations %}
                             <tr>
                                 <td>
-                                    <a href="{{ url_for('projects.view_project', project_id=asgn.project_id) }}" class="text-decoration-none">
-                                        <strong>{{ asgn.project_name }}</strong> <i class="bi bi-box-arrow-up-right"></i>
+                                    <a href="{{ url_for('projects.project_materials_tab', project_id=asgn.project_id) }}" class="text-decoration-none fw-bold">
+                                        {{ asgn.project_name }} <i class="bi bi-box-arrow-up-right small"></i>
                                     </a>
                                 </td>
                                 <td>

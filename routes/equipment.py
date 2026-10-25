@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from sqlalchemy import text
-from app import db
+from extensions import db
+from routes.helpers import validate_and_assign_equipment
 
 equipment_bp = Blueprint('equipment', __name__, url_prefix='/equipment')
 
@@ -28,7 +29,7 @@ def view_equipment(equipment_id):
         
     # Fetch all assignments for this equipment
     assignments = db.session.execute(text("""
-        SELECT ea.assignment_id, ea.start_date, ea.end_date, ea.hours_used,
+        SELECT ea.assignment_id, ea.start_date, ea.end_date, ea.hours_used, ea.locked_hourly_rate,
                p.project_id, p.project_name, tt.task_name, pt.status as task_status
         FROM equipment_assignments ea
         JOIN project_tasks pt ON ea.project_task_id = pt.project_task_id
@@ -37,12 +38,26 @@ def view_equipment(equipment_id):
         WHERE ea.equipment_id = :id
         ORDER BY ea.start_date DESC
     """), {'id': equipment_id}).fetchall()
+
+    current_assignment = db.session.execute(text("""
+        SELECT ea.assignment_id, ea.start_date, ea.end_date, ea.hours_used, ea.locked_hourly_rate,
+               p.project_id, p.project_name, tt.task_name, pt.status as task_status
+        FROM equipment_assignments ea
+        JOIN project_tasks pt ON ea.project_task_id = pt.project_task_id
+        JOIN task_types tt ON pt.task_type_id = tt.task_type_id
+        JOIN projects p ON pt.project_id = p.project_id
+        WHERE ea.equipment_id = :id
+          AND (ea.end_date IS NULL OR ea.end_date >= CURRENT_DATE)
+        ORDER BY ea.start_date DESC
+        LIMIT 1
+    """), {'id': equipment_id}).fetchone()
         
     active_projects = db.session.execute(text("""
         SELECT project_id, project_name FROM projects WHERE status != 'Completed' ORDER BY project_name
     """)).fetchall()
         
-    return render_template('equipment/view.html', equipment=eq, assignments=assignments, active_projects=active_projects)
+    return render_template('equipment/view.html', equipment=eq, assignments=assignments, 
+                           current_assignment=current_assignment, active_projects=active_projects)
 
 @equipment_bp.route('/new', methods=['GET', 'POST'])
 @login_required
@@ -106,62 +121,19 @@ def assign_equipment(equipment_id):
     project_task_id = request.form.get('project_task_id')
     start_date = request.form.get('start_date')
     end_date = request.form.get('end_date') or None
-    hours_used = float(request.form.get('hours_used', 0))
-    
-    if not project_task_id or not start_date:
-        flash("Task and Start Date are required.", "danger")
-        return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
-    if hours_used < 0:
-        flash("Hours used cannot be negative.", "danger")
-        return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
-    if end_date and start_date > end_date:
-        flash("Start date cannot be after end date.", "danger")
-        return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
+    hours_used = request.form.get('hours_used', 0)
 
-    # 1. Fetch equipment and reject if under Maintenance or Retired
-    equipment = db.session.execute(text("SELECT equipment_name, status, hourly_rate FROM equipment WHERE equipment_id = :id"), {'id': equipment_id}).fetchone()
-    if not equipment:
-        flash("Equipment not found.", "danger")
-        return redirect(url_for('equipment.list_equipment'))
-        
-    if equipment.status in ('Maintenance', 'Retired'):
-        flash(f"Cannot assign {equipment.equipment_name}: Equipment is currently in '{equipment.status}' status.", "danger")
-        return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
-        
-    # 2. Overlap Check
-    if end_date:
-        overlap_sql = text("""
-            SELECT 1 FROM equipment_assignments
-            WHERE equipment_id = :eq_id
-            AND start_date <= :end_date
-            AND (end_date >= :start_date OR end_date IS NULL)
-            LIMIT 1
-        """)
-        overlap = db.session.execute(overlap_sql, {'eq_id': equipment_id, 'start_date': start_date, 'end_date': end_date}).fetchone()
+    success, msg = validate_and_assign_equipment(
+        project_task_id=project_task_id,
+        equipment_id=equipment_id,
+        start_date_str=start_date,
+        end_date_str=end_date,
+        hours_used_raw=hours_used
+    )
+
+    if success:
+        flash(msg, "success")
     else:
-        overlap_sql = text("""
-            SELECT 1 FROM equipment_assignments
-            WHERE equipment_id = :eq_id
-            AND (end_date >= :start_date OR end_date IS NULL)
-            LIMIT 1
-        """)
-        overlap = db.session.execute(overlap_sql, {'eq_id': equipment_id, 'start_date': start_date}).fetchone()
-        
-    if overlap:
-        flash("This equipment is already assigned during the specified overlapping period.", "danger")
-        return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))
+        flash(msg, "danger")
 
-    db.session.execute(text("""
-        INSERT INTO equipment_assignments (equipment_id, project_task_id, start_date, end_date, hours_used, locked_hourly_rate)
-        VALUES (:equipment_id, :project_task_id, :start_date, :end_date, :hours_used, :locked_hourly_rate)
-    """), {
-        'equipment_id': equipment_id,
-        'project_task_id': project_task_id,
-        'start_date': start_date,
-        'end_date': end_date,
-        'hours_used': hours_used,
-        'locked_hourly_rate': equipment.hourly_rate
-    })
-    db.session.commit()
-    flash("Equipment assigned to task successfully!", "success")
     return redirect(url_for('equipment.view_equipment', equipment_id=equipment_id))

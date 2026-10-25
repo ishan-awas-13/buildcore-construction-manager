@@ -15,7 +15,8 @@ qa_suites = [
     ('Module 4: Project & Task Lifecycle', 'qa_test_tasks_projects.py'),
     ('Module 5: Security & UI Handling', 'qa_test_security_ui.py'),
     ('Module 6: Performance & Scalability', 'qa_test_performance.py'),
-    ('Module 7: Phase 2 Foundational Regression', 'run_all_tests.py')
+    ('Module 7: Phase 2 Foundational Regression', 'run_all_tests.py'),
+    ('Module 8: Project-First Workspace & Registers', 'verify_project_first_ui.py')
 ]
 
 print("=" * 75)

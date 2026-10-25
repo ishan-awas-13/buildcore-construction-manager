@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Materials — {{ project.project_name }} - BuildCore{% endblock %}
+
+{% block content %}
+{% include "projects/_workspace_nav.html" %}
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h5 class="mb-0 fw-bold"><i class="bi bi-box-seam text-success me-2"></i>Project Materials & Inventory</h5>
+            <small class="text-muted">Track on-site material stock delivered from project purchase orders and recorded task consumption.</small>
+        </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#allocateModal">
+            <i class="bi bi-plus-circle me-1"></i> Allocate Material
+        </button>
+    </div>
+    <div class="card-body p-0">
+        {% if project_materials %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 25%;">Material</th>
+                        <th>Delivered to Project</th>
+                        <th>Allocated</th>
+                        <th>Used / Consumed</th>
+                        <th>Remaining Allocated</th>
+                        <th class="text-end" style="width: 15%;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mat in project_materials %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('materials.view_material', material_id=mat.material_id) }}" class="fw-bold text-decoration-none">
+                                {{ mat.material_name }} <i class="bi bi-box-arrow-up-right small"></i>
+                            </a>
+                        </td>
+                        <td>
+                            {% if mat.total_delivered > 0 %}
+                                <span class="fw-semibold">{{ "{:.2f}".format(mat.total_delivered) }} {{ mat.unit }}</span>
+                            {% else %}
+                                <span class="text-muted">Direct / Initial</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ "{:.2f}".format(mat.quantity_allocated) }} {{ mat.unit }}</td>
+                        <td>{{ "{:.2f}".format(mat.quantity_used) }} {{ mat.unit }}</td>
+                        <td>
+                            {% set remaining = mat.quantity_allocated - mat.quantity_used %}
+                            <span class="{% if remaining < 0 %}text-danger fw-bold{% elif remaining == 0 %}text-warning fw-bold{% else %}text-success fw-bold{% endif %}">
+                                {{ "{:.2f}".format(remaining) }} {{ mat.unit }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            {% if remaining > 0 %}
+                            <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#consumeModal{{ mat.usage_id }}">
+                                <i class="bi bi-dash-circle me-1"></i> Log Usage
+                            </button>
+                            {% else %}
+                            <span class="badge bg-secondary">Fully Consumed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <!-- Log Usage Modal for this material -->
+                    <div class="modal fade" id="consumeModal{{ mat.usage_id }}" tabindex="-1" aria-labelledby="consumeModalLabel{{ mat.usage_id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content text-start">
+                                <form action="{{ url_for('projects.consume_material', project_id=project.project_id) }}" method="POST">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="consumeModalLabel{{ mat.usage_id }}"><i class="bi bi-dash-circle text-success me-2"></i>Record Consumption: {{ mat.material_name }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <input type="hidden" name="usage_id" value="{{ mat.usage_id }}">
+                                        <div class="mb-3">
+                                            <label class="form-label text-muted small">Currently Allocated to Project</label>
+                                            <input type="text" class="form-control bg-light" value="{{ '{:.2f}'.format(mat.quantity_allocated) }} {{ mat.unit }}" disabled>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label text-muted small">Already Consumed</label>
+                                            <input type="text" class="form-control bg-light" value="{{ '{:.2f}'.format(mat.quantity_used) }} {{ mat.unit }}" disabled>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold text-success">Available to Consume</label>
+                                            <input type="text" class="form-control bg-light text-success fw-bold" value="{{ '{:.2f}'.format(remaining) }} {{ mat.unit }}" disabled>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="quantity_consumed_{{ mat.usage_id }}" class="form-label fw-bold">Quantity to Consume ({{ mat.unit }}) <span class="text-danger">*</span></label>
+                                            <input type="number" step="0.01" min="0.01" max="{{ remaining }}" class="form-control" id="quantity_consumed_{{ mat.usage_id }}" name="quantity_consumed" required placeholder="Enter amount consumed">
+                                            <div class="form-text">Cannot exceed the remaining balance of {{ '{:.2f}'.format(remaining) }} {{ mat.unit }}.</div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-success">Confirm Consumption</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
+            No materials allocated to this project yet.
+            <div class="mt-3">
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#allocateModal">
+                    <i class="bi bi-plus-circle me-1"></i> Allocate Delivered Material
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Allocate Material Modal -->
+<div class="modal fade" id="allocateModal" tabindex="-1" aria-labelledby="allocateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('projects.allocate_material', project_id=project.project_id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="allocateModalLabel"><i class="bi bi-box-seam text-primary me-2"></i>Allocate Material to {{ project.project_name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {% if available_to_allocate %}
+                    <div class="mb-3">
+                        <label for="material_id" class="form-label fw-bold">Select Delivered Material <span class="text-danger">*</span></label>
+                        <select class="form-select" id="material_id" name="material_id" required>
+                            <option value="">-- Choose from delivered project purchases --</option>
+                            {% for m in available_to_allocate %}
+                            <option value="{{ m.material_id }}">
+                                {{ m.material_name }} (Available: {{ "{:.2f}".format(m.available_qty) }} {{ m.unit }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Only materials purchased and received as 'Delivered' on this project are available.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantity_allocated" class="form-label fw-bold">Quantity to Allocate <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="0.01" class="form-control" id="quantity_allocated" name="quantity_allocated" required placeholder="Enter quantity">
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle me-1"></i> No unallocated delivered materials found for this project. To allocate materials, create a purchase order for this project and mark it as <strong>Delivered</strong>.
+                        <div class="mt-2">
+                            <a href="{{ url_for('projects.project_purchases_tab', project_id=project.project_id) }}" class="btn btn-sm btn-outline-warning">
+                                Go to Project Purchases
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    {% if available_to_allocate %}
+                    <button type="submit" class="btn btn-primary">Allocate Stock</button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

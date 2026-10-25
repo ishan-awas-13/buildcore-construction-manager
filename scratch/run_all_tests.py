@@ -20,7 +20,9 @@ print("============================================================\n")
 all_passed = True
 for s in scripts:
     script_path = os.path.join(scratch_dir, s)
-    res = subprocess.run([python_bin, script_path])
+    env = os.environ.copy()
+    env['TEST_DB_NAME'] = os.environ.get('TEST_DB_NAME', 'buildcore_test')
+    res = subprocess.run([python_bin, script_path], env=env)
     if res.returncode != 0:
         all_passed = False
         print(f"\n[FAIL] Test suite failed: {s}")

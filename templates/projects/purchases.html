@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Purchases — {{ project.project_name }} - BuildCore{% endblock %}
+
+{% block content %}
+{% include "projects/_workspace_nav.html" %}
+
+<!-- Summary Stats Header -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body d-flex align-items-center justify-content-between py-3">
+                <div>
+                    <small class="text-muted text-uppercase fw-semibold">Total Orders Value</small>
+                    <h3 class="fw-bold mb-0 text-dark">₹{{ total_po_value | inr }}</h3>
+                </div>
+                <div class="bg-secondary-subtle text-secondary p-3 rounded-circle">
+                    <i class="bi bi-receipt fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body d-flex align-items-center justify-content-between py-3">
+                <div>
+                    <small class="text-muted text-uppercase fw-semibold">Recognized Delivered Spend</small>
+                    <h3 class="fw-bold mb-0 text-primary">₹{{ recognized_po_spend | inr }}</h3>
+                </div>
+                <div class="bg-primary-subtle text-primary p-3 rounded-circle">
+                    <i class="bi bi-box-seam-fill fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h5 class="mb-0 fw-bold"><i class="bi bi-cart3 text-primary me-2"></i>Project Purchase Orders</h5>
+            <small class="text-muted">Procurement orders contracted specifically for {{ project.project_name }}.</small>
+        </div>
+        <a href="{{ url_for('purchases.add_purchase', project_id=project.project_id) }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> New Purchase Order
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if purchases %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>PO #</th>
+                        <th>Date</th>
+                        <th>Supplier</th>
+                        <th>Line Items</th>
+                        <th>Total Amount</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in purchases %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('purchases.view_purchase', purchase_id=p.purchase_id) }}" class="fw-bold text-decoration-none">
+                                PO #{{ p.purchase_id }}
+                            </a>
+                        </td>
+                        <td>{{ p.purchase_date.strftime('%d %b %Y') if p.purchase_date else 'N/A' }}</td>
+                        <td>
+                            <a href="{{ url_for('suppliers.view_supplier', supplier_id=p.supplier_id) }}" class="text-decoration-none">
+                                {{ p.supplier_name }}
+                            </a>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ p.item_count }} item(s)</span></td>
+                        <td class="fw-bold">₹{{ p.total_amount | inr }}</td>
+                        <td>
+                            <span class="badge {% if p.status == 'Delivered' or p.status == 'Completed' %}bg-success{% elif p.status == 'Ordered' %}bg-warning text-dark{% elif p.status == 'Shipped' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                                {{ p.status }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('purchases.view_purchase', purchase_id=p.purchase_id) }}" class="btn btn-sm btn-outline-primary">
+                                View PO <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-cart-x fs-1 d-block mb-2"></i>
+            No purchase orders created for this project yet.
+            <div class="mt-3">
+                <a href="{{ url_for('purchases.add_purchase', project_id=project.project_id) }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Create First Purchase Order
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

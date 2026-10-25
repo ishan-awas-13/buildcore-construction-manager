@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from sqlalchemy import text
-from app import db
+from extensions import db
 from datetime import datetime
+from routes.helpers import validate_and_assign_task
 
 tasks_bp = Blueprint('tasks', __name__, url_prefix='/tasks')
 
@@ -117,51 +118,24 @@ def assign_task(task_type_id):
         due_date = request.form['due_date']
         status = request.form['status'].strip()
         description = request.form.get('description', '').strip()
+        completion_percentage = request.form.get('completion_percentage', 0)
 
-        try:
-            completion_percentage = float(request.form.get('completion_percentage', 0))
-        except (ValueError, TypeError):
-            flash("Invalid completion percentage.", "danger")
+        success, msg, _ = validate_and_assign_task(
+            project_id=project_id,
+            task_type_id=task_type_id,
+            start_date_str=start_date,
+            due_date_str=due_date,
+            status=status,
+            completion_percentage_raw=completion_percentage,
+            description=description
+        )
+
+        if success:
+            flash(f'"{task_type.task_name}" assigned to project successfully!', 'success')
+            return redirect(url_for('tasks.view_task', task_type_id=task_type_id))
+        else:
+            flash(msg, "danger")
             return redirect(url_for('tasks.assign_task', task_type_id=task_type_id))
-
-        if completion_percentage < 0 or completion_percentage > 100:
-            flash("Completion percentage must be between 0 and 100.", "danger")
-            return redirect(url_for('tasks.assign_task', task_type_id=task_type_id))
-
-        # Timeline Boundary Validation
-        project = db.session.execute(text("SELECT start_date, expected_end_date FROM projects WHERE project_id = :id"), {'id': project_id}).fetchone()
-        if project:
-            sd = datetime.strptime(start_date, '%Y-%m-%d').date()
-            dd = datetime.strptime(due_date, '%Y-%m-%d').date()
-            if sd > dd:
-                flash("Start date cannot be after due date.", "danger")
-                return redirect(url_for('tasks.assign_task', task_type_id=task_type_id))
-            if sd < project.start_date or dd > project.expected_end_date:
-                flash(f"Task dates must fall within the project timeline ({project.start_date.strftime('%d %b %Y')} to {project.expected_end_date.strftime('%d %b %Y')}).", "danger")
-                return redirect(url_for('tasks.assign_task', task_type_id=task_type_id))
-
-        # Status and Progress Synchronization
-        if status == 'Completed' or completion_percentage >= 100.0:
-            status = 'Completed'
-            completion_percentage = 100.0
-        elif status == 'Not Started':
-            if completion_percentage > 0:
-                status = 'In Progress'
-            else:
-                completion_percentage = 0.0
-
-        db.session.execute(text("""
-            INSERT INTO project_tasks (project_id, task_type_id, start_date, due_date, status, completion_percentage, description)
-            VALUES (:project_id, :task_type_id, :start_date, :due_date, :status, :completion_percentage, :description)
-        """), {
-            'project_id': project_id, 'task_type_id': task_type_id,
-            'start_date': start_date, 'due_date': due_date,
-            'status': status, 'completion_percentage': completion_percentage,
-            'description': description
-        })
-        db.session.commit()
-        flash(f'"{task_type.task_name}" assigned to project successfully!', 'success')
-        return redirect(url_for('tasks.view_task', task_type_id=task_type_id))
 
     # Fetch projects that DON'T already have this task type assigned
     projects = db.session.execute(text("""
@@ -238,10 +212,13 @@ def edit_project_task(project_task_id):
         db.session.commit()
         flash('Project task updated successfully!', 'success')
 
-        # Redirect back to the task type view
-        pt = db.session.execute(text("SELECT task_type_id FROM project_tasks WHERE project_task_id = :id"),
+        # Redirect back to the project workspace tasks tab
+        pt = db.session.execute(text("SELECT project_id, task_type_id FROM project_tasks WHERE project_task_id = :id"),
                                 {'id': project_task_id}).fetchone()
-        return redirect(url_for('tasks.view_task', task_type_id=pt.task_type_id))
+        next_url = request.args.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect(url_for('projects.project_tasks_tab', project_id=pt.project_id))
 
     # Fetch the project task with its task type name and project name
     pt = db.session.execute(text("""

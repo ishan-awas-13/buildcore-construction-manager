@@ -1,68 +1,74 @@
 {% extends "base.html" %}
 
-{% block title %}{{ task_type.task_name }} - BuildCore Infrastructure{% endblock %}
+{% block title %}{{ task_type.task_name }} - Task Types Register - BuildCore Infrastructure{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Task Type Details</h1>
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{{ url_for('tasks.list_tasks') }}" class="text-decoration-none">Task Types Register</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ task_type.task_name }}</li>
+            </ol>
+        </nav>
+        <h1 class="h2 mb-0">{{ task_type.task_name }}</h1>
+    </div>
     <div class="btn-toolbar mb-2 mb-md-0">
         <a href="{{ url_for('tasks.list_tasks') }}" class="btn btn-sm btn-outline-secondary me-2">
-            <i class="bi bi-arrow-left"></i> Back to Tasks
+            <i class="bi bi-arrow-left"></i> Back to Register
         </a>
-        <a href="{{ url_for('tasks.edit_task', task_type_id=task_type.task_type_id) }}" class="btn btn-sm btn-outline-primary me-2">
-            <i class="bi bi-pencil"></i> Edit Task Type
-        </a>
-        <a href="{{ url_for('tasks.assign_task', task_type_id=task_type.task_type_id) }}" class="btn btn-sm btn-primary">
-            <i class="bi bi-plus-circle"></i> Assign to Project
+        <a href="{{ url_for('tasks.edit_task', task_type_id=task_type.task_type_id) }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-pencil me-1"></i> Edit Task Type
         </a>
     </div>
 </div>
 
 <!-- Task Type Info -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">{{ task_type.task_name }}</h5>
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-card-text text-primary me-2"></i>Standard Task Specification</h5>
     </div>
     <div class="card-body">
-        <div class="row">
-            <div class="col-sm-2 text-muted">Task Type ID</div>
-            <div class="col-sm-10">{{ task_type.task_type_id }}</div>
+        <div class="row mb-3">
+            <div class="col-sm-3 text-muted">Task Type ID</div>
+            <div class="col-sm-9 fw-bold">#{{ task_type.task_type_id }}</div>
         </div>
-        <div class="row mt-2">
-            <div class="col-sm-2 text-muted">Description</div>
-            <div class="col-sm-10">{{ task_type.description or 'No description provided.' }}</div>
+        <div class="row mb-0">
+            <div class="col-sm-3 text-muted">Scope & Standard Procedure</div>
+            <div class="col-sm-9">{{ task_type.description or 'No standard procedure description recorded.' }}</div>
         </div>
     </div>
 </div>
 
 <!-- Projects Using This Task -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">Projects Using "{{ task_type.task_name }}"</h5>
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-kanban text-secondary me-2"></i>Projects Executing "{{ task_type.task_name }}"</h5>
     </div>
-    <div class="card-body">
+    <div class="card-body p-0">
         {% if project_instances %}
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead>
+                <thead class="table-light">
                     <tr>
-                        <th>Project</th>
+                        <th style="width: 28%;">Project</th>
                         <th>Dates</th>
                         <th>Status</th>
-                        <th style="width: 30%;">Progress</th>
-                        <th>Actions</th>
+                        <th style="width: 25%;">Progress</th>
+                        <th class="text-end" style="width: 15%;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for pi in project_instances %}
                     <tr>
                         <td>
-                            <a href="{{ url_for('projects.view_project', project_id=pi.project_id) }}" class="text-decoration-none">
-                                <strong>{{ pi.project_name }}</strong> <i class="bi bi-box-arrow-up-right"></i>
+                            <a href="{{ url_for('projects.project_tasks_tab', project_id=pi.project_id) }}" class="fw-bold text-decoration-none">
+                                {{ pi.project_name }} <i class="bi bi-box-arrow-up-right small"></i>
                             </a>
                         </td>
                         <td>
-                            <small>{{ pi.start_date.strftime('%d %b %Y') }} - {{ pi.due_date.strftime('%d %b %Y') }}</small>
+                            <small class="d-block">{{ pi.start_date.strftime('%d %b %Y') if pi.start_date else 'N/A' }}</small>
+                            <small class="text-muted">to {{ pi.due_date.strftime('%d %b %Y') if pi.due_date else 'N/A' }}</small>
                         </td>
                         <td>
                             <span class="badge {% if pi.status == 'Completed' %}bg-success{% elif pi.status == 'In Progress' %}bg-primary{% elif pi.status == 'On Hold' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
@@ -70,16 +76,21 @@
                             </span>
                         </td>
                         <td>
-                            <div class="progress" style="height: 22px;">
-                                <div class="progress-bar {% if pi.completion_percentage == 100 %}bg-success{% endif %}" role="progressbar"
-                                    style="width: {{ pi.completion_percentage }}%;"
-                                    aria-valuenow="{{ pi.completion_percentage }}" aria-valuemin="0" aria-valuemax="100">
-                                    {{ "{:.0f}".format(pi.completion_percentage) }}%
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 18px;">
+                                    <div class="progress-bar {% if pi.completion_percentage == 100 %}bg-success{% endif %}" role="progressbar"
+                                        style="width: {{ pi.completion_percentage }}%;"
+                                        aria-valuenow="{{ pi.completion_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
                                 </div>
+                                <span class="small fw-bold" style="min-width: 36px;">{{ "{:.0f}".format(pi.completion_percentage) }}%</span>
                             </div>
                         </td>
-                        <td>
-                            <a href="{{ url_for('tasks.edit_project_task', project_task_id=pi.project_task_id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <td class="text-end">
+                            <a href="{{ url_for('tasks.edit_project_task', project_task_id=pi.project_task_id) }}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
+                            <a href="{{ url_for('projects.project_tasks_tab', project_id=pi.project_id) }}" class="btn btn-sm btn-outline-primary" title="Open Workspace">
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -87,8 +98,14 @@
             </table>
         </div>
         {% else %}
-        <p class="text-muted mb-0 text-center">This task type has not been assigned to any projects yet.</p>
+        <div class="p-4 text-center text-muted">
+            <i class="bi bi-clipboard-x fs-2 d-block mb-2"></i>
+            This task type has not been added to any projects yet.
+        </div>
         {% endif %}
+    </div>
+    <div class="card-footer bg-light small text-muted">
+        <i class="bi bi-info-circle me-1"></i> Tasks are assigned to projects directly from within each <a href="{{ url_for('projects.list_projects') }}">Project Workspace</a> under the Tasks tab.
     </div>
 </div>
 {% endblock %}

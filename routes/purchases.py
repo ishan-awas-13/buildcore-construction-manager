@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from sqlalchemy import text
-from app import db
+from extensions import db
 
 purchases_bp = Blueprint('purchases', __name__, url_prefix='/purchases')
 
@@ -23,6 +23,7 @@ def list_purchases():
 @purchases_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_purchase():
+    selected_project_id = request.args.get('project_id', type=int)
     if request.method == 'POST':
         supplier_id = request.form['supplier_id']
         project_id = request.form['project_id']
@@ -32,7 +33,7 @@ def add_purchase():
         valid_statuses = ['Ordered', 'Shipped', 'Delivered', 'Completed', 'Cancelled']
         if status not in valid_statuses:
             flash('Invalid status selected.', 'danger')
-            return redirect(url_for('purchases.add_purchase'))
+            return redirect(url_for('purchases.add_purchase', project_id=project_id))
         
         sql = text("""
             INSERT INTO purchases (supplier_id, project_id, purchase_date, status)
@@ -51,7 +52,7 @@ def add_purchase():
         
     suppliers = db.session.execute(text("SELECT * FROM suppliers ORDER BY supplier_name")).fetchall()
     projects = db.session.execute(text("SELECT project_id, project_name FROM projects ORDER BY project_name")).fetchall()
-    return render_template('purchases/form.html', purchase=None, suppliers=suppliers, projects=projects)
+    return render_template('purchases/form.html', purchase=None, suppliers=suppliers, projects=projects, selected_project_id=selected_project_id)
 
 @purchases_bp.route('/<int:purchase_id>')
 @login_required
@@ -149,7 +150,7 @@ def edit_purchase(purchase_id):
     purchase = db.session.execute(text("SELECT * FROM purchases WHERE purchase_id = :id"), {'id': purchase_id}).fetchone()
     suppliers = db.session.execute(text("SELECT * FROM suppliers ORDER BY supplier_name")).fetchall()
     projects = db.session.execute(text("SELECT project_id, project_name FROM projects ORDER BY project_name")).fetchall()
-    return render_template('purchases/form.html', purchase=purchase, suppliers=suppliers, projects=projects)
+    return render_template('purchases/form.html', purchase=purchase, suppliers=suppliers, projects=projects, selected_project_id=(purchase.project_id if purchase else None))
 
 @purchases_bp.route('/<int:purchase_id>/add_item', methods=['POST'])
 @login_required

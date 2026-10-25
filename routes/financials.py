@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from sqlalchemy import text
-from app import db
+from extensions import db
 
 financials_bp = Blueprint('financials', __name__, url_prefix='/financials')
 
@@ -25,67 +25,13 @@ def list_financials():
     projects = db.session.execute(sql).fetchall()
     return render_template('financials/list.html', projects=projects)
 
-# ─── Project-Specific Financial Dashboard ─────────────────────────────
+# ─── Project-Specific Financial Dashboard (Legacy 302 Redirect) ───────
 @financials_bp.route('/project/<int:project_id>')
 @login_required
 def project_dashboard(project_id):
-    """The main Financials dashboard for a single project."""
-    
-    # Get project info
-    project = db.session.execute(
-        text("SELECT * FROM projects WHERE project_id = :id"),
-        {'id': project_id}
-    ).fetchone()
-    
-    if not project:
-        flash('Project not found.', 'danger')
-        return redirect(url_for('financials.list_financials'))
-    
-    # Category totals
-    category_sql = text("""
-        SELECT category, COALESCE(SUM(amount), 0) AS total
-        FROM expense_ledger_view
-        WHERE project_id = :id
-        GROUP BY category
-    """)
-    category_rows = db.session.execute(category_sql, {'id': project_id}).fetchall()
-    
-    categories = {'Materials': 0, 'Labour': 0, 'Equipment': 0, 'Other': 0}
-    for row in category_rows:
-        categories[row.category] = float(row.total)
-    
-    total_cost = sum(categories.values())
-    budget = float(project.budget or 0)
-    remaining = budget - total_cost
-    budget_used_pct = (total_cost / budget * 100) if budget > 0 else 0
-    
-    # Get the full transaction ledger, with optional category filter
-    filter_category = request.args.get('category', 'All')
-    
-    if filter_category and filter_category != 'All':
-        ledger_sql = text("""
-            SELECT * FROM expense_ledger_view
-            WHERE project_id = :id AND category = :cat
-            ORDER BY transaction_date DESC
-        """)
-        ledger = db.session.execute(ledger_sql, {'id': project_id, 'cat': filter_category}).fetchall()
-    else:
-        ledger_sql = text("""
-            SELECT * FROM expense_ledger_view
-            WHERE project_id = :id
-            ORDER BY transaction_date DESC
-        """)
-        ledger = db.session.execute(ledger_sql, {'id': project_id}).fetchall()
-    
-    return render_template('financials/dashboard.html',
-        project=project,
-        categories=categories,
-        total_cost=total_cost,
-        remaining=remaining,
-        budget_used_pct=budget_used_pct,
-        ledger=ledger,
-        filter_category=filter_category
-    )
+    """The project financial dashboard is now embedded in the Project Workspace.
+    Redirect 302 to maintain full backwards compatibility."""
+    return redirect(url_for('projects.project_financials_tab', project_id=project_id), code=302)
 
 # ─── Miscellaneous Expense CRUD ───────────────────────────────────────
 @financials_bp.route('/project/<int:project_id>/misc/add', methods=['GET', 'POST'])

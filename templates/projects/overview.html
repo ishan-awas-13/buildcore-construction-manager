@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.project_name }} - Workspace Overview - BuildCore{% endblock %}
+
+{% block content %}
+{% include "projects/_workspace_nav.html" %}
+
+<!-- Workspace Metric KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4 col-xl-2 col-6">
+        <a href="{{ url_for('projects.project_tasks_tab', project_id=project.project_id) }}" class="text-decoration-none">
+            <div class="card shadow-sm border-0 text-center h-100 hover-card">
+                <div class="card-body py-3">
+                    <i class="bi bi-list-task text-primary fs-3 mb-1 d-block"></i>
+                    <h3 class="fw-bold mb-0">{{ task_counts.total }}</h3>
+                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Tasks ({{ task_counts.completed }} Done)</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4 col-xl-2 col-6">
+        <a href="{{ url_for('projects.project_workers_tab', project_id=project.project_id) }}" class="text-decoration-none">
+            <div class="card shadow-sm border-0 text-center h-100 hover-card">
+                <div class="card-body py-3">
+                    <i class="bi bi-people text-info fs-3 mb-1 d-block"></i>
+                    <h3 class="fw-bold mb-0">{{ worker_count }}</h3>
+                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Active Workers</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4 col-xl-2 col-6">
+        <a href="{{ url_for('projects.project_equipment_tab', project_id=project.project_id) }}" class="text-decoration-none">
+            <div class="card shadow-sm border-0 text-center h-100 hover-card">
+                <div class="card-body py-3">
+                    <i class="bi bi-truck text-warning fs-3 mb-1 d-block"></i>
+                    <h3 class="fw-bold mb-0">{{ equipment_count }}</h3>
+                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Equipment Units</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4 col-xl-2 col-6">
+        <a href="{{ url_for('projects.project_materials_tab', project_id=project.project_id) }}" class="text-decoration-none">
+            <div class="card shadow-sm border-0 text-center h-100 hover-card">
+                <div class="card-body py-3">
+                    <i class="bi bi-box-seam text-success fs-3 mb-1 d-block"></i>
+                    <h3 class="fw-bold mb-0">{{ material_lines_count }}</h3>
+                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Material Items</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4 col-xl-2 col-6">
+        <a href="{{ url_for('projects.project_purchases_tab', project_id=project.project_id) }}" class="text-decoration-none">
+            <div class="card shadow-sm border-0 text-center h-100 hover-card">
+                <div class="card-body py-3">
+                    <i class="bi bi-cart3 text-danger fs-3 mb-1 d-block"></i>
+                    <h3 class="fw-bold mb-0">{{ po_count }}</h3>
+                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Purchase Orders</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4 col-xl-2 col-6">
+        <a href="{{ url_for('projects.project_financials_tab', project_id=project.project_id) }}" class="text-decoration-none">
+            <div class="card shadow-sm border-0 text-center h-100 hover-card">
+                <div class="card-body py-3">
+                    <i class="bi bi-cash-stack text-secondary fs-3 mb-1 d-block"></i>
+                    <h3 class="fw-bold mb-0">{{ "{:.0f}".format(budget_used_pct) }}%</h3>
+                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Budget Used</small>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Spend vs Budget Summary Card -->
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-wallet2 text-primary me-2"></i>Spend vs Budget</h5>
+                <a href="{{ url_for('projects.project_financials_tab', project_id=project.project_id) }}" class="btn btn-sm btn-outline-primary">
+                    View Financial Ledger <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-4">
+                    <div class="col-4 border-end">
+                        <small class="text-muted text-uppercase">Allocated Budget</small>
+                        <h4 class="fw-bold text-dark mt-1">₹{{ project.budget | inr }}</h4>
+                    </div>
+                    <div class="col-4 border-end">
+                        <small class="text-muted text-uppercase">Recognized Spend</small>
+                        <h4 class="fw-bold text-primary mt-1">₹{{ total_spend | inr }}</h4>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-muted text-uppercase">Remaining</small>
+                        <h4 class="fw-bold mt-1 {% if remaining_budget < 0 %}text-danger{% else %}text-success{% endif %}">
+                            ₹{{ remaining_budget | inr }}
+                        </h4>
+                    </div>
+                </div>
+
+                <div class="mb-2 d-flex justify-content-between small">
+                    <span class="text-muted">Budget Utilization</span>
+                    <span class="fw-bold">{{ "{:.1f}".format(budget_used_pct) }}%</span>
+                </div>
+                <div class="progress" style="height: 22px;">
+                    <div class="progress-bar {% if budget_used_pct > 90 %}bg-danger{% elif budget_used_pct > 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                        role="progressbar" 
+                        style="width: {{ [budget_used_pct, 100] | min }}%;" 
+                        aria-valuenow="{{ budget_used_pct }}" aria-valuemin="0" aria-valuemax="100">
+                        {{ "{:.1f}".format(budget_used_pct) }}%
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                    Procurement expenses are recognized upon delivery; labor and equipment usage reflect snapshot rates.
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Specifications Card -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-card-text text-secondary me-2"></i>Project Details</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted" style="width: 35%;">Project ID</td>
+                            <td class="fw-bold">#{{ project.project_id }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Project Type</td>
+                            <td><span class="badge bg-light text-dark border">{{ project.project_type }}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Client Name</td>
+                            <td class="fw-semibold">{{ project.client_name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Location</td>
+                            <td>{{ project.location }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Start Date</td>
+                            <td>{{ project.start_date.strftime('%d %b %Y') if project.start_date else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Expected End</td>
+                            <td>{{ project.expected_end_date.strftime('%d %b %Y') if project.expected_end_date else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Current Status</td>
+                            <td>
+                                <span class="badge {% if project.status == 'Active' %}bg-success{% elif project.status == 'Completed' %}bg-primary{% elif project.status == 'On Hold' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ project.status }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Tasks Snapshot -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-calendar-check text-primary me-2"></i>Schedule & Upcoming Tasks</h5>
+        <a href="{{ url_for('projects.project_tasks_tab', project_id=project.project_id) }}" class="btn btn-sm btn-outline-primary">
+            View All Tasks ({{ task_counts.total }}) <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_tasks %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Task Name</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th style="width: 30%;">Progress</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in recent_tasks %}
+                    <tr>
+                        <td class="fw-bold">{{ t.task_name }}</td>
+                        <td><small>{{ t.due_date.strftime('%d %b %Y') if t.due_date else 'N/A' }}</small></td>
+                        <td>
+                            <span class="badge {% if t.status == 'Completed' %}bg-success{% elif t.status == 'In Progress' %}bg-primary{% elif t.status == 'On Hold' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                {{ t.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 18px;">
+                                <div class="progress-bar {% if t.completion_percentage == 100 %}bg-success{% endif %}" role="progressbar"
+                                    style="width: {{ t.completion_percentage }}%;" aria-valuenow="{{ t.completion_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                    {{ "{:.0f}".format(t.completion_percentage) }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('tasks.edit_project_task', project_task_id=t.project_task_id) }}" class="btn btn-sm btn-outline-secondary">
+                                Edit
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-check2-circle fs-2 d-block mb-2"></i>
+            No tasks created yet for this project.
+            <div class="mt-2">
+                <a href="{{ url_for('projects.project_tasks_tab', project_id=project.project_id) }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> Add First Task
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

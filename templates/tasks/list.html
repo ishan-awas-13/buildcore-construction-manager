@@ -1,48 +1,62 @@
 {% extends "base.html" %}
 
-{% block title %}Task Types - BuildCore Infrastructure{% endblock %}
+{% block title %}Task Types Register - BuildCore Infrastructure{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Task Types</h1>
+    <div>
+        <h1 class="h2 mb-1">Task Types Register</h1>
+        <p class="text-muted small mb-0">Company-wide master register of standardized task definitions. Tasks are scheduled and managed inside individual Project Workspaces.</p>
+    </div>
     <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="{{ url_for('tasks.add_task') }}" class="btn btn-sm btn-primary">
-            <i class="bi bi-plus-circle"></i> Add New Task Type
+        <a href="{{ url_for('tasks.add_task') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Add New Task Type
         </a>
     </div>
 </div>
 
-<div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Task Name</th>
-                <th>Description</th>
-                <th>Projects Using</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for tt in task_types %}
-            <tr>
-                <td>{{ tt.task_type_id }}</td>
-                <td><strong>{{ tt.task_name }}</strong></td>
-                <td>{{ tt.description[:80] ~ '...' if tt.description and tt.description|length > 80 else (tt.description or 'N/A') }}</td>
-                <td>
-                    <span class="badge bg-info text-dark">{{ tt.project_count }} project{{ 's' if tt.project_count != 1 }}</span>
-                </td>
-                <td>
-                    <a href="{{ url_for('tasks.view_task', task_type_id=tt.task_type_id) }}" class="btn btn-sm btn-outline-info">View</a>
-                    <a href="{{ url_for('tasks.edit_task', task_type_id=tt.task_type_id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="5" class="text-center">No task types found.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Task Name</th>
+                    <th>Standard Scope Description</th>
+                    <th style="width: 15%;">Active In</th>
+                    <th style="width: 15%;" class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tt in task_types %}
+                <tr>
+                    <td class="text-muted fw-bold">#{{ tt.task_type_id }}</td>
+                    <td>
+                        <a href="{{ url_for('tasks.view_task', task_type_id=tt.task_type_id) }}" class="fw-bold text-decoration-none">
+                            {{ tt.task_name }}
+                        </a>
+                    </td>
+                    <td><small class="text-muted">{{ tt.description[:100] ~ '...' if tt.description and tt.description|length > 100 else (tt.description or 'No standard description recorded.') }}</small></td>
+                    <td>
+                        <span class="badge bg-light text-dark border">
+                            <i class="bi bi-kanban text-primary me-1"></i>{{ tt.project_count }} project{{ 's' if tt.project_count != 1 }}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('tasks.view_task', task_type_id=tt.task_type_id) }}" class="btn btn-sm btn-outline-primary me-1">View</a>
+                        <a href="{{ url_for('tasks.edit_task', task_type_id=tt.task_type_id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-5 text-muted">
+                        <i class="bi bi-list-task fs-1 d-block mb-2"></i>
+                        No task types registered yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

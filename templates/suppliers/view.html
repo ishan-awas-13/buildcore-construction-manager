@@ -81,7 +81,11 @@
                                     </a>
                                 </td>
                                 <td>{{ p.purchase_date.strftime('%d %b %Y') if p.purchase_date else '' }}</td>
-                                <td>{{ p.project_name }}</td>
+                                <td>
+                                    <a href="{{ url_for('projects.project_purchases_tab', project_id=p.project_id) }}" class="text-decoration-none">
+                                        {{ p.project_name }} <i class="bi bi-box-arrow-up-right small"></i>
+                                    </a>
+                                </td>
                                 <td>
                                     <span class="badge {% if p.status == 'Completed' %}bg-success{% elif p.status == 'Pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
                                         {{ p.status }}

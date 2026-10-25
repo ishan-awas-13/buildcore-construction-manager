@@ -8,9 +8,15 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">{% if purchase %}Edit Purchase Order PO-{{ purchase.purchase_id }}{% else %}Create Purchase Order{% endif %}</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
+        {% if selected_project_id %}
+        <a href="{{ url_for('projects.project_purchases_tab', project_id=selected_project_id) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Project Purchases
+        </a>
+        {% else %}
         <a href="{{ url_for('purchases.list_purchases') }}" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Back to Purchases
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -34,11 +40,14 @@
                 <select class="form-select" id="project_id" name="project_id" required>
                     <option value="">-- Choose a Project --</option>
                     {% for proj in projects %}
-                    <option value="{{ proj.project_id }}" {% if purchase and purchase.project_id == proj.project_id %}selected{% endif %}>
+                    <option value="{{ proj.project_id }}" {% if (purchase and purchase.project_id == proj.project_id) or (selected_project_id and selected_project_id == proj.project_id) %}selected{% endif %}>
                         {{ proj.project_name }}
                     </option>
                     {% endfor %}
                 </select>
+                {% if selected_project_id and not purchase %}
+                <div class="form-text text-primary"><i class="bi bi-info-circle me-1"></i>Pre-selected from your active project workspace.</div>
+                {% endif %}
             </div>
 
             <div class="row mb-4">

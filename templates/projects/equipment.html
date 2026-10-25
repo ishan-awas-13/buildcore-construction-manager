@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Equipment — {{ project.project_name }} - BuildCore{% endblock %}
+
+{% block content %}
+{% include "projects/_workspace_nav.html" %}
+
+<!-- Summary Stats Header -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body d-flex align-items-center justify-content-between py-3">
+                <div>
+                    <small class="text-muted text-uppercase fw-semibold">Total Logged Machine Hours</small>
+                    <h3 class="fw-bold mb-0 text-warning text-dark">{{ "{:.1f}".format(total_eq_hours) }} hrs</h3>
+                </div>
+                <div class="bg-warning-subtle text-warning p-3 rounded-circle">
+                    <i class="bi bi-speedometer fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body d-flex align-items-center justify-content-between py-3">
+                <div>
+                    <small class="text-muted text-uppercase fw-semibold">Total Equipment Cost (Snapshot Rates)</small>
+                    <h3 class="fw-bold mb-0 text-success">₹{{ total_eq_cost | inr }}</h3>
+                </div>
+                <div class="bg-success-subtle text-success p-3 rounded-circle">
+                    <i class="bi bi-cash-stack fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h5 class="mb-0 fw-bold"><i class="bi bi-truck text-warning me-2"></i>Assigned Project Equipment</h5>
+            <small class="text-muted">Machinery and vehicles deployed to this project with snapshot hourly cost tracking.</small>
+        </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEquipmentModal">
+            <i class="bi bi-plus-circle me-1"></i> Assign Equipment
+        </button>
+    </div>
+    <div class="card-body p-0">
+        {% if assignments %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 25%;">Equipment</th>
+                        <th style="width: 25%;">Task</th>
+                        <th>Dates</th>
+                        <th>Hours Used</th>
+                        <th>Locked Rate</th>
+                        <th class="text-end">Total Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in assignments %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('equipment.view_equipment', equipment_id=a.equipment_id) }}" class="fw-bold text-decoration-none">
+                                {{ a.equipment_name }} <i class="bi bi-box-arrow-up-right small"></i>
+                            </a>
+                            <br><small class="text-muted">{{ a.equipment_type }}</small>
+                        </td>
+                        <td>
+                            <strong class="text-dark">{{ a.task_name }}</strong>
+                            <br>
+                            <small class="badge {% if a.task_status == 'Completed' %}bg-success{% elif a.task_status == 'In Progress' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {{ a.task_status }}
+                            </small>
+                        </td>
+                        <td>
+                            <small class="d-block">{{ a.start_date.strftime('%d %b %Y') if a.start_date else 'N/A' }}</small>
+                            {% if a.end_date %}
+                            <small class="text-muted">to {{ a.end_date.strftime('%d %b %Y') }}</small>
+                            {% else %}
+                            <small class="text-success fw-bold">(Ongoing Deployment)</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="fw-semibold">{{ "{:.1f}".format(a.hours_used) }} hrs</span>
+                        </td>
+                        <td>
+                            <span class="text-muted">₹{{ a.locked_hourly_rate | inr }} / hr</span>
+                        </td>
+                        <td class="text-end fw-bold text-success">
+                            ₹{{ a.total_cost | inr }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-truck fs-1 d-block mb-2"></i>
+            No equipment deployed to this project yet.
+            <div class="mt-3">
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEquipmentModal">
+                    <i class="bi bi-plus-circle me-1"></i> Assign Equipment
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Assign Equipment Modal -->
+<div class="modal fade" id="addEquipmentModal" tabindex="-1" aria-labelledby="addEquipmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('projects.assign_project_equipment', project_id=project.project_id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addEquipmentModalLabel"><i class="bi bi-truck text-warning me-2"></i>Assign Equipment to Project Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {% if project_tasks %}
+                    <!-- Select Task from this Project -->
+                    <div class="mb-3">
+                        <label for="eq_project_task_id" class="form-label fw-bold">Select Project Task <span class="text-danger">*</span></label>
+                        <select class="form-select" id="eq_project_task_id" name="project_task_id" required>
+                            <option value="">-- Choose task in {{ project.project_name }} --</option>
+                            {% for pt in project_tasks %}
+                            <option value="{{ pt.project_task_id }}">
+                                {{ pt.task_name }} ({{ pt.start_date.strftime('%d %b') if pt.start_date else '' }} to {{ pt.due_date.strftime('%d %b %Y') if pt.due_date else '' }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Select Eligible Equipment -->
+                    <div class="mb-3">
+                        <label for="eq_equipment_id" class="form-label fw-bold">Select Equipment Unit <span class="text-danger">*</span></label>
+                        <select class="form-select" id="eq_equipment_id" name="equipment_id" required>
+                            <option value="">-- Choose eligible equipment --</option>
+                            {% for eq in eligible_equipment %}
+                            <option value="{{ eq.equipment_id }}">
+                                {{ eq.equipment_name }} &bull; {{ eq.equipment_type }} (₹{{ eq.hourly_rate | inr }}/hr) &bull; [{{ eq.status }}]
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Units in Maintenance or Retired status are excluded.</div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="eq_start_date" class="form-label fw-bold">Deployment Start Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="eq_start_date" name="start_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="eq_end_date" class="form-label">End Date (Optional)</label>
+                            <input type="date" class="form-control" id="eq_end_date" name="end_date">
+                        </div>
+                    </div>
+
+                    <!-- Hours Used -->
+                    <div class="mb-3">
+                        <label for="eq_hours_used" class="form-label fw-bold">Hours Logged</label>
+                        <input type="number" step="0.5" min="0" class="form-control" id="eq_hours_used" name="hours_used" value="0">
+                        <div class="form-text">Equipment cost is calculated as Hours Used &times; Locked Hourly Rate.</div>
+                    </div>
+
+                    <div class="alert alert-info py-2 small mb-0">
+                        <i class="bi bi-shield-lock me-1"></i> The machine's hourly rate will be snapshot-locked for this assignment to guarantee accounting integrity.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle me-1"></i> There are no active tasks in this project yet. Please <a href="{{ url_for('projects.project_tasks_tab', project_id=project.project_id) }}" class="alert-link">add a task</a> before deploying equipment.
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    {% if project_tasks %}
+                    <button type="submit" class="btn btn-primary">Deploy Equipment</button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

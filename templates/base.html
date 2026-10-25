@@ -95,6 +95,11 @@
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint and request.endpoint.startswith('projects.') %}active{% endif %}" href="{{ url_for('projects.list_projects') }}"><i class="bi bi-kanban" aria-hidden="true"></i><span>Projects</span></a>
                         </li>
+
+                        <li class="nav-item mt-3 px-3 py-1 text-uppercase text-secondary small fw-bold" style="font-size: 0.72rem; letter-spacing: 0.08em;">
+                            Company Registers
+                        </li>
+
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint and request.endpoint.startswith('workers.') %}active{% endif %}" href="{{ url_for('workers.list_workers') }}"><i class="bi bi-people" aria-hidden="true"></i><span>Workers</span></a>
                         </li>
@@ -102,21 +107,19 @@
                             <a class="nav-link {% if request.endpoint and request.endpoint.startswith('equipment.') %}active{% endif %}" href="{{ url_for('equipment.list_equipment') }}"><i class="bi bi-truck" aria-hidden="true"></i><span>Equipment</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('tasks.') %}active{% endif %}" href="{{ url_for('tasks.list_tasks') }}"><i class="bi bi-list-task" aria-hidden="true"></i><span>Tasks</span></a>
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('materials.') %}active{% endif %}" href="{{ url_for('materials.list_materials') }}"><i class="bi bi-box-seam" aria-hidden="true"></i><span>Materials</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('materials.') %}active{% endif %}" href="{{ url_for('materials.list_materials') }}"><i class="bi bi-box-seam" aria-hidden="true"></i><span>Materials</span></a>
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('tasks.') %}active{% endif %}" href="{{ url_for('tasks.list_tasks') }}"><i class="bi bi-list-task" aria-hidden="true"></i><span>Task Types</span></a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint and request.endpoint.startswith('suppliers.') %}active{% endif %}" href="{{ url_for('suppliers.list_suppliers') }}"><i class="bi bi-building" aria-hidden="true"></i><span>Suppliers</span></a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('purchases.') %}active{% endif %}" href="{{ url_for('purchases.list_purchases') }}"><i class="bi bi-cart3" aria-hidden="true"></i><span>Purchases</span></a>
-                        </li>
-                        <li class="nav-item">
+
+                        <li class="nav-item mt-3">
                             <a class="nav-link {% if request.endpoint and request.endpoint.startswith('financials.') %}active{% endif %}" href="{{ url_for('financials.list_financials') }}"><i class="bi bi-cash-stack" aria-hidden="true"></i><span>Financials</span></a>
                         </li>
-                        <li class="nav-item mt-4">
+                        <li class="nav-item">
                             <a class="nav-link text-warning {% if request.endpoint and request.endpoint.startswith('reports.') %}active{% endif %}" href="{{ url_for('reports.dashboard') }}">
                                 <i class="bi bi-bar-chart-line" aria-hidden="true"></i><span>Reports</span>
                             </a>

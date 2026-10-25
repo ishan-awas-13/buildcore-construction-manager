@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Financials — {{ project.project_name }} - BuildCore{% endblock %}
+
+{% block content %}
+{% include "projects/_workspace_nav.html" %}
+
+<!-- Summary Header with Action -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h5 class="mb-0 fw-bold"><i class="bi bi-cash-stack text-success me-2"></i>Project Financial Ledger & Cost Summary</h5>
+        <small class="text-muted">Real-time expenditure tracking reconciled from procurement, labor timesheets, equipment logs, and operational expenses.</small>
+    </div>
+    <a href="{{ url_for('financials.add_misc_expense', project_id=project.project_id) }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i> Add Misc Expense
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 text-center h-100">
+            <div class="card-body py-3">
+                <small class="text-muted text-uppercase fw-semibold">Total Budget</small>
+                <h3 class="fw-bold mb-0 text-dark mt-1">₹{{ project.budget | inr }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 text-center h-100">
+            <div class="card-body py-3">
+                <small class="text-muted text-uppercase fw-semibold">Total Cost Recognized</small>
+                <h3 class="fw-bold mb-0 text-primary mt-1">₹{{ total_cost | inr }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 text-center h-100">
+            <div class="card-body py-3">
+                <small class="text-muted text-uppercase fw-semibold">Remaining Budget</small>
+                <h3 class="fw-bold mb-0 mt-1 {% if remaining < 0 %}text-danger{% else %}text-success{% endif %}">
+                    ₹{{ remaining | inr }}
+                </h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Utilization Bar -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between mb-1">
+            <small class="text-muted fw-semibold">Budget Utilization</small>
+            <small class="fw-bold">{{ "{:.1f}".format(budget_used_pct) }}%</small>
+        </div>
+        <div class="progress" style="height: 24px;">
+            <div class="progress-bar {% if budget_used_pct > 90 %}bg-danger{% elif budget_used_pct > 70 %}bg-warning{% else %}bg-success{% endif %}"
+                 role="progressbar" style="width: {{ [budget_used_pct, 100] | min }}%;"
+                 aria-valuenow="{{ budget_used_pct }}" aria-valuemin="0" aria-valuemax="100">
+                {{ "{:.1f}".format(budget_used_pct) }}%
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cost Breakdown by Category -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="card shadow-sm border-0 text-center">
+            <div class="card-body py-2">
+                <small class="text-muted">Materials (Delivered)</small>
+                <h5 class="fw-bold text-success mb-0 mt-1">₹{{ categories['Materials'] | inr }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card shadow-sm border-0 text-center">
+            <div class="card-body py-2">
+                <small class="text-muted">Labour (Locked Rates)</small>
+                <h5 class="fw-bold text-info mb-0 mt-1">₹{{ categories['Labour'] | inr }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card shadow-sm border-0 text-center">
+            <div class="card-body py-2">
+                <small class="text-muted">Equipment (Locked Rates)</small>
+                <h5 class="fw-bold text-warning mb-0 mt-1">₹{{ categories['Equipment'] | inr }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card shadow-sm border-0 text-center">
+            <div class="card-body py-2">
+                <small class="text-muted">Other / Operational</small>
+                <h5 class="fw-bold text-secondary mb-0 mt-1">₹{{ categories['Other'] | inr }}</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Ledger -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-journal-text text-primary me-2"></i>Itemized Expense Ledger</h5>
+        <!-- Category Filter -->
+        <div class="btn-group btn-group-sm" role="group">
+            <a href="{{ url_for('projects.project_financials_tab', project_id=project.project_id, category='All') }}"
+               class="btn btn-outline-secondary {% if filter_category == 'All' %}active{% endif %}">All</a>
+            <a href="{{ url_for('projects.project_financials_tab', project_id=project.project_id, category='Materials') }}"
+               class="btn btn-outline-secondary {% if filter_category == 'Materials' %}active{% endif %}">Materials</a>
+            <a href="{{ url_for('projects.project_financials_tab', project_id=project.project_id, category='Labour') }}"
+               class="btn btn-outline-secondary {% if filter_category == 'Labour' %}active{% endif %}">Labour</a>
+            <a href="{{ url_for('projects.project_financials_tab', project_id=project.project_id, category='Equipment') }}"
+               class="btn btn-outline-secondary {% if filter_category == 'Equipment' %}active{% endif %}">Equipment</a>
+            <a href="{{ url_for('projects.project_financials_tab', project_id=project.project_id, category='Other') }}"
+               class="btn btn-outline-secondary {% if filter_category == 'Other' %}active{% endif %}">Other</a>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if ledger %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in ledger %}
+                    <tr>
+                        <td>{{ row.transaction_date.strftime('%d %b %Y') if row.transaction_date else 'N/A' }}</td>
+                        <td>
+                            <span class="badge {% if row.category == 'Materials' %}bg-success{% elif row.category == 'Labour' %}bg-info text-dark{% elif row.category == 'Equipment' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                {{ row.category }}
+                            </span>
+                        </td>
+                        <td>{{ row.description }}</td>
+                        <td class="text-end fw-bold">₹{{ row.amount | inr }}</td>
+                        <td class="text-end">
+                            {% if row.source_type == 'Other' %}
+                            <a href="{{ url_for('financials.edit_misc_expense', expense_id=row.source_id) }}"
+                               class="btn btn-sm btn-outline-secondary py-0 px-2" title="Edit Misc Expense">
+                                <i class="bi bi-pencil small"></i>
+                            </a>
+                            <form action="{{ url_for('financials.delete_misc_expense', expense_id=row.source_id) }}"
+                                  method="POST" class="d-inline"
+                                  onsubmit="return confirm('Are you sure you want to delete this operational expense?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Delete">
+                                    <i class="bi bi-trash small"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="text-muted small">&bull; Auto-Tracked</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
+            No ledger transactions found for category: <strong>{{ filter_category }}</strong>.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
