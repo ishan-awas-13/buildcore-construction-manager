@@ -387,6 +387,46 @@ def project_equipment_tab(project_id):
     total_eq_hours = sum(float(a.hours_used) for a in assignments)
     total_eq_cost = sum(float(a.total_cost) for a in assignments)
 
+    # Serialize active tasks for client-side date bounding
+    tasks_json = [
+        {
+            'id': pt.project_task_id,
+            'name': pt.task_name,
+            'start': pt.start_date.strftime('%Y-%m-%d') if pt.start_date else '',
+            'end': pt.due_date.strftime('%Y-%m-%d') if pt.due_date else '',
+            'start_fmt': pt.start_date.strftime('%d %b %Y') if pt.start_date else '',
+            'end_fmt': pt.due_date.strftime('%d %b %Y') if pt.due_date else ''
+        }
+        for pt in project_tasks
+    ]
+
+    # Query active & upcoming equipment bookings across company to empower live UI guidance
+    bookings_query = db.session.execute(text("""
+        SELECT ea.equipment_id, ea.start_date, COALESCE(ea.end_date, pt.due_date) as end_date,
+               p.project_name, tt.task_name, pt.status as task_status
+        FROM equipment_assignments ea
+        JOIN project_tasks pt ON ea.project_task_id = pt.project_task_id
+        JOIN projects p ON pt.project_id = p.project_id
+        JOIN task_types tt ON pt.task_type_id = tt.task_type_id
+        WHERE pt.status != 'Completed'
+           OR (ea.end_date IS NOT NULL AND ea.end_date >= CURRENT_DATE)
+        ORDER BY ea.start_date ASC
+    """)).fetchall()
+
+    bookings_by_equipment = {}
+    for b in bookings_query:
+        eq_id = b.equipment_id
+        if eq_id not in bookings_by_equipment:
+            bookings_by_equipment[eq_id] = []
+        bookings_by_equipment[eq_id].append({
+            'start': b.start_date.strftime('%Y-%m-%d') if b.start_date else '',
+            'end': b.end_date.strftime('%Y-%m-%d') if b.end_date else '',
+            'start_fmt': b.start_date.strftime('%d %b %Y') if b.start_date else '',
+            'end_fmt': b.end_date.strftime('%d %b %Y') if b.end_date else 'Ongoing',
+            'project_name': b.project_name,
+            'task_name': b.task_name
+        })
+
     return render_template(
         'projects/equipment.html',
         project=project,
@@ -395,7 +435,9 @@ def project_equipment_tab(project_id):
         project_tasks=project_tasks,
         eligible_equipment=eligible_equipment,
         total_eq_hours=total_eq_hours,
-        total_eq_cost=total_eq_cost
+        total_eq_cost=total_eq_cost,
+        tasks_json=tasks_json,
+        bookings_json=bookings_by_equipment
     )
 
 

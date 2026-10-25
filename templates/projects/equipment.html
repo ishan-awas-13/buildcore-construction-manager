@@ -133,6 +133,9 @@
                             </option>
                             {% endfor %}
                         </select>
+                        <div id="taskTimelineNotice" class="form-text text-primary fw-semibold mt-1 d-none">
+                            <i class="bi bi-calendar-event me-1"></i><span id="taskTimelineText"></span>
+                        </div>
                     </div>
 
                     <!-- Select Eligible Equipment -->
@@ -146,23 +149,43 @@
                             </option>
                             {% endfor %}
                         </select>
-                        <div class="form-text">Units in Maintenance or Retired status are excluded.</div>
+                        <!-- Live Equipment Schedule Status & Booked Windows -->
+                        <div id="equipmentScheduleInfo" class="mt-2">
+                            <div class="form-text">Select an equipment unit to inspect its live booking availability.</div>
+                        </div>
                     </div>
 
-                    <!-- Date Range -->
+                    <!-- Date Range Selection with Live Schedule Intelligence -->
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label for="eq_start_date" class="form-label fw-bold">Deployment Start Date <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="eq_start_date" name="start_date" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="eq_end_date" class="form-label">End Date (Optional)</label>
+                        <div class="col-md-6 mb-2">
+                            <label for="eq_end_date" class="form-label fw-bold">End Date (Optional)</label>
                             <input type="date" class="form-control" id="eq_end_date" name="end_date">
                         </div>
                     </div>
 
+                    <!-- Real-Time Conflict Warning Box -->
+                    <div id="dateConflictAlert" class="alert alert-danger py-2 px-3 small my-2 d-none">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-exclamation-octagon-fill fs-5 me-2 text-danger mt-1"></i>
+                            <div>
+                                <strong>Schedule Collision Detected!</strong>
+                                <div id="conflictAlertText" class="mt-1"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clear Dates Confirmation Notice -->
+                    <div id="dateClearNotice" class="alert alert-success py-2 px-3 small my-2 d-none">
+                        <i class="bi bi-calendar-check-fill me-1 text-success"></i>
+                        <span id="clearNoticeText">Dates are clear! Machine is available for this period.</span>
+                    </div>
+
                     <!-- Hours Used -->
-                    <div class="mb-3">
+                    <div class="mb-3 mt-2">
                         <label for="eq_hours_used" class="form-label fw-bold">Hours Logged</label>
                         <input type="number" step="0.5" min="0" class="form-control" id="eq_hours_used" name="hours_used" value="0">
                         <div class="form-text">Equipment cost is calculated as Hours Used &times; Locked Hourly Rate.</div>
@@ -180,11 +203,163 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     {% if project_tasks %}
-                    <button type="submit" class="btn btn-primary">Deploy Equipment</button>
+                    <button type="submit" id="btnDeployEquipment" class="btn btn-primary">Deploy Equipment</button>
                     {% endif %}
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const projectTasks = {{ tasks_json | tojson if tasks_json is defined else '[]' }};
+    const equipmentBookings = {{ bookings_json | tojson if bookings_json is defined else '{}' }};
+
+    const taskSelect = document.getElementById('eq_project_task_id');
+    const equipSelect = document.getElementById('eq_equipment_id');
+    const startDateInput = document.getElementById('eq_start_date');
+    const endDateInput = document.getElementById('eq_end_date');
+    const taskTimelineNotice = document.getElementById('taskTimelineNotice');
+    const taskTimelineText = document.getElementById('taskTimelineText');
+    const equipScheduleInfo = document.getElementById('equipmentScheduleInfo');
+    const conflictAlert = document.getElementById('dateConflictAlert');
+    const conflictAlertText = document.getElementById('conflictAlertText');
+    const clearNotice = document.getElementById('dateClearNotice');
+    const clearNoticeText = document.getElementById('clearNoticeText');
+    const submitBtn = document.getElementById('btnDeployEquipment');
+
+    if (!taskSelect || !equipSelect) return;
+
+    // 1. When Task selection changes:
+    taskSelect.addEventListener('change', function() {
+        const taskId = parseInt(this.value);
+        const task = projectTasks.find(t => t.id === taskId);
+        if (task && task.start && task.end) {
+            taskTimelineNotice.classList.remove('d-none');
+            taskTimelineText.textContent = `Task Duration: ${task.start_fmt} to ${task.end_fmt} (Dates constrained to task timeline)`;
+            startDateInput.min = task.start;
+            startDateInput.max = task.end;
+            endDateInput.min = task.start;
+            endDateInput.max = task.end;
+            
+            // Prefill with task boundaries if inputs are empty or outside task range
+            if (!startDateInput.value || startDateInput.value < task.start || startDateInput.value > task.end) {
+                startDateInput.value = task.start;
+            }
+            if (!endDateInput.value || endDateInput.value < task.start || endDateInput.value > task.end) {
+                endDateInput.value = task.end;
+            }
+        } else {
+            taskTimelineNotice.classList.add('d-none');
+            startDateInput.removeAttribute('min');
+            startDateInput.removeAttribute('max');
+            endDateInput.removeAttribute('min');
+            endDateInput.removeAttribute('max');
+        }
+        validateDates();
+    });
+
+    // 2. When Equipment selection changes:
+    equipSelect.addEventListener('change', function() {
+        const eqId = parseInt(this.value);
+        const bookings = equipmentBookings[eqId] || [];
+
+        if (!this.value) {
+            equipScheduleInfo.innerHTML = '<div class="form-text">Select an equipment unit to inspect its live booking availability.</div>';
+            validateDates();
+            return;
+        }
+
+        if (bookings.length === 0) {
+            equipScheduleInfo.innerHTML = `
+                <div class="alert alert-success py-2 px-3 small mb-0 d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill text-success fs-5 me-2"></i>
+                    <div>
+                        <strong>Fully Available</strong><br>
+                        <span class="text-muted">No active or upcoming bookings recorded for this machine.</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            let bookingItems = bookings.map(b => 
+                `<li><strong>${b.start_fmt} &ndash; ${b.end_fmt}</strong>: ${b.project_name} (${b.task_name})</li>`
+            ).join('');
+            
+            equipScheduleInfo.innerHTML = `
+                <div class="alert alert-warning py-2 px-3 small mb-0">
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="bi bi-calendar-x-fill text-warning fs-5 me-2"></i>
+                        <strong class="text-dark">Existing Booked Periods:</strong>
+                    </div>
+                    <ul class="mb-1 ps-3" style="font-size: 0.82rem;">${bookingItems}</ul>
+                    <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Please select deployment dates outside these reserved periods.</small>
+                </div>
+            `;
+        }
+        validateDates();
+    });
+
+    // 3. When dates change:
+    startDateInput.addEventListener('input', validateDates);
+    endDateInput.addEventListener('input', validateDates);
+
+    function validateDates() {
+        const eqId = parseInt(equipSelect.value);
+        const userStart = startDateInput.value;
+        const userEnd = endDateInput.value || null;
+
+        conflictAlert.classList.add('d-none');
+        clearNotice.classList.add('d-none');
+        startDateInput.classList.remove('is-invalid', 'is-valid');
+        endDateInput.classList.remove('is-invalid', 'is-valid');
+        if (submitBtn) submitBtn.disabled = false;
+
+        if (!eqId || !userStart) {
+            return;
+        }
+
+        if (userEnd && userStart > userEnd) {
+            conflictAlert.classList.remove('d-none');
+            conflictAlertText.textContent = "Start date cannot be after end date.";
+            startDateInput.classList.add('is-invalid');
+            endDateInput.classList.add('is-invalid');
+            if (submitBtn) submitBtn.disabled = true;
+            return;
+        }
+
+        const bookings = equipmentBookings[eqId] || [];
+        let collision = null;
+
+        for (const b of bookings) {
+            const bStart = b.start;
+            const bEnd = b.end || '9999-12-31';
+            const effectiveUserEnd = userEnd || '9999-12-31';
+
+            // Overlap check
+            if (userStart <= bEnd && effectiveUserEnd >= bStart) {
+                collision = b;
+                break;
+            }
+        }
+
+        if (collision) {
+            conflictAlert.classList.remove('d-none');
+            conflictAlertText.innerHTML = `
+                This equipment is already reserved from <strong>${collision.start_fmt}</strong> to <strong>${collision.end_fmt}</strong> on <strong>${collision.project_name}</strong> (${collision.task_name}).<br>
+                Please choose dates outside this reserved period to deploy this machine.
+            `;
+            startDateInput.classList.add('is-invalid');
+            endDateInput.classList.add('is-invalid');
+            if (submitBtn) submitBtn.disabled = true;
+        } else {
+            clearNotice.classList.remove('d-none');
+            clearNoticeText.textContent = `Clear to deploy! No reservation conflicts found for the selected dates.`;
+            startDateInput.classList.add('is-valid');
+            endDateInput.classList.add('is-valid');
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+});
+</script>
 {% endblock %}
