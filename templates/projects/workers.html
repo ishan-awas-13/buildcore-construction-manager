@@ -36,19 +36,36 @@
 </div>
 
 <div class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-            <h5 class="mb-0 fw-bold"><i class="bi bi-people text-primary me-2"></i>Assigned Project Workers</h5>
-            <small class="text-muted">Workers deployed to specific project tasks with locked wage accounting.</small>
+    <div class="card-header bg-white py-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="mb-0 fw-bold"><i class="bi bi-people text-primary me-2"></i>Assigned Project Workers</h5>
+                <small class="text-muted">Workers deployed to specific project tasks with locked wage accounting.</small>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Quick Filter / Search -->
+                {% if assignments %}
+                <div class="input-group input-group-sm" style="max-width: 220px;">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" id="workerSearchInput" class="form-control" placeholder="Filter workers...">
+                </div>
+                <select id="taskFilterSelect" class="form-select form-select-sm" style="max-width: 200px;">
+                    <option value="all">All Tasks ({{ assignments|length }})</option>
+                    {% for pt in project_tasks %}
+                    <option value="{{ pt.project_task_id }}">{{ pt.task_name }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addWorkerModal">
+                    <i class="bi bi-person-plus me-1"></i> Assign Worker
+                </button>
+            </div>
         </div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWorkerModal">
-            <i class="bi bi-person-plus me-1"></i> Assign Worker
-        </button>
     </div>
     <div class="card-body p-0">
         {% if assignments %}
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" id="assignmentsTable">
                 <thead class="table-light">
                     <tr>
                         <th style="width: 25%;">Task</th>
@@ -61,10 +78,14 @@
                 </thead>
                 <tbody>
                     {% for a in assignments %}
-                    <tr>
+                    <tr class="worker-assignment-row" data-task-id="{{ a.project_task_id }}" data-search-text="{{ a.worker_name|lower }} {{ a.task_name|lower }} {{ a.role|lower }} {{ (a.skill or '')|lower }}">
                         <td>
-                            <strong class="text-dark">{{ a.task_name }}</strong>
-                            <br>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <strong class="text-dark">{{ a.task_name }}</strong>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary" onclick="openAssignModalForTask({{ a.project_task_id }})" title="Assign another worker to this task">
+                                    <i class="bi bi-person-plus-fill small"></i>
+                                </button>
+                            </div>
                             <small class="badge {% if a.task_status == 'Completed' %}bg-success{% elif a.task_status == 'In Progress' %}bg-primary{% else %}bg-secondary{% endif %}">
                                 {{ a.task_status }}
                             </small>
@@ -101,6 +122,10 @@
                 </tbody>
             </table>
         </div>
+        <div id="noMatchMessage" class="text-center py-4 text-muted d-none">
+            <i class="bi bi-search fs-3 d-block mb-1"></i>
+            No matching worker assignments found for this filter.
+        </div>
         {% else %}
         <div class="text-center py-5 text-muted">
             <i class="bi bi-people fs-1 d-block mb-2"></i>
@@ -117,19 +142,19 @@
 
 <!-- Assign Worker Modal -->
 <div class="modal fade" id="addWorkerModal" tabindex="-1" aria-labelledby="addWorkerModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form action="{{ url_for('projects.assign_project_worker', project_id=project.project_id) }}" method="POST">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addWorkerModalLabel"><i class="bi bi-person-plus text-primary me-2"></i>Assign Worker to Task</h5>
+                    <h5 class="modal-title" id="addWorkerModalLabel"><i class="bi bi-person-plus text-primary me-2"></i>Assign Worker to Project Task</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     {% if project_tasks %}
                     <!-- Select Task from this Project -->
                     <div class="mb-3">
-                        <label for="project_task_id" class="form-label fw-bold">Select Project Task <span class="text-danger">*</span></label>
-                        <select class="form-select" id="project_task_id" name="project_task_id" required>
+                        <label for="worker_project_task_id" class="form-label fw-bold">Select Project Task <span class="text-danger">*</span></label>
+                        <select class="form-select" id="worker_project_task_id" name="project_task_id" required>
                             <option value="">-- Choose task in {{ project.project_name }} --</option>
                             {% for pt in project_tasks %}
                             <option value="{{ pt.project_task_id }}">
@@ -137,6 +162,9 @@
                             </option>
                             {% endfor %}
                         </select>
+                        <div id="workerTaskTimelineNotice" class="form-text text-primary fw-semibold mt-1 d-none">
+                            <i class="bi bi-calendar-event me-1"></i><span id="workerTaskTimelineText"></span>
+                        </div>
                     </div>
 
                     <!-- Select Eligible Worker -->
@@ -150,18 +178,44 @@
                             </option>
                             {% endfor %}
                         </select>
-                        <div class="form-text">Workers on leave or marked inactive are excluded from assignment.</div>
+                        <!-- Live Worker Availability & Existing Task Commitments -->
+                        <div id="workerScheduleInfo" class="mt-2">
+                            <div class="form-text">Select a worker to inspect their current task commitments and availability.</div>
+                        </div>
                     </div>
 
-                    <!-- Assigned Hours -->
+                    <!-- Real-Time Conflict Warning Box -->
+                    <div id="workerConflictAlert" class="alert alert-danger py-2 px-3 small my-2 d-none">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-exclamation-octagon-fill fs-5 me-2 text-danger mt-1"></i>
+                            <div>
+                                <strong id="workerConflictTitle">Schedule Collision Detected!</strong>
+                                <div id="workerConflictAlertText" class="mt-1"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clear Schedule Confirmation Notice -->
+                    <div id="workerClearNotice" class="alert alert-success py-2 px-3 small my-2 d-none">
+                        <i class="bi bi-calendar-check-fill me-1 text-success"></i>
+                        <span id="workerClearNoticeText">Schedule Clear! Worker is free during this task window.</span>
+                    </div>
+
+                    <!-- Assigned Hours & Live Cost Estimation -->
                     <div class="mb-3">
                         <label for="assigned_hours" class="form-label fw-bold">Assigned Hours <span class="text-danger">*</span></label>
-                        <input type="number" step="0.5" min="0.5" class="form-control" id="assigned_hours" name="assigned_hours" required placeholder="e.g. 40">
-                        <div class="form-text">Labor costs are calculated as (Hours / 8) &times; Locked Daily Rate.</div>
+                        <div class="input-group">
+                            <input type="number" step="0.5" min="0.5" class="form-control" id="assigned_hours" name="assigned_hours" required placeholder="e.g. 40">
+                            <span class="input-group-text">hours</span>
+                        </div>
+                        <div id="laborCostPreview" class="form-text text-success fw-semibold mt-1 d-none">
+                            <i class="bi bi-calculator me-1"></i><span id="laborCostPreviewText"></span>
+                        </div>
+                        <div class="form-text text-muted">Labor costs are calculated as (Hours / 8) &times; Locked Daily Rate.</div>
                     </div>
 
                     <div class="alert alert-info py-2 small mb-0">
-                        <i class="bi bi-shield-lock me-1"></i> The worker's current daily rate will be snapshot-locked for this assignment to protect financial audit trails.
+                        <i class="bi bi-shield-lock me-1"></i> The worker's current daily rate will be snapshot-locked for this assignment to guarantee financial audit trails.
                     </div>
                     {% else %}
                     <div class="alert alert-warning mb-0">
@@ -172,11 +226,240 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     {% if project_tasks %}
-                    <button type="submit" class="btn btn-primary">Assign Worker</button>
+                    <button type="submit" id="btnAssignWorker" class="btn btn-primary">Assign Worker</button>
                     {% endif %}
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const projectTasks = {{ tasks_json | tojson if tasks_json is defined else '[]' }};
+    const workerBookings = {{ bookings_json | tojson if bookings_json is defined else '{}' }};
+    const workerRates = {{ worker_rates | tojson if worker_rates is defined else '{}' }};
+
+    const taskSelect = document.getElementById('worker_project_task_id');
+    const workerSelect = document.getElementById('worker_id');
+    const hoursInput = document.getElementById('assigned_hours');
+    const taskTimelineNotice = document.getElementById('workerTaskTimelineNotice');
+    const taskTimelineText = document.getElementById('workerTaskTimelineText');
+    const workerScheduleInfo = document.getElementById('workerScheduleInfo');
+    const conflictAlert = document.getElementById('workerConflictAlert');
+    const conflictTitle = document.getElementById('workerConflictTitle');
+    const conflictAlertText = document.getElementById('workerConflictAlertText');
+    const clearNotice = document.getElementById('workerClearNotice');
+    const clearNoticeText = document.getElementById('workerClearNoticeText');
+    const laborCostPreview = document.getElementById('laborCostPreview');
+    const laborCostPreviewText = document.getElementById('laborCostPreviewText');
+    const submitBtn = document.getElementById('btnAssignWorker');
+
+    // Helper: Open Modal for a specific task
+    window.openAssignModalForTask = function(taskId) {
+        if (!taskSelect) return;
+        taskSelect.value = taskId;
+        taskSelect.dispatchEvent(new Event('change'));
+        const modalEl = document.getElementById('addWorkerModal');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+    };
+
+    if (!taskSelect || !workerSelect) return;
+
+    // 1. When Task Selection Changes:
+    taskSelect.addEventListener('change', function() {
+        const taskId = parseInt(this.value);
+        const task = projectTasks.find(t => t.id === taskId);
+        if (task && task.start && task.end) {
+            taskTimelineNotice.classList.remove('d-none');
+            taskTimelineText.textContent = `Task Duration: ${task.start_fmt} to ${task.end_fmt} (Worker assignment will be validated against this window)`;
+        } else if (task) {
+            taskTimelineNotice.classList.remove('d-none');
+            taskTimelineText.textContent = `Task Duration: Open-ended dates (No fixed start or due date)`;
+        } else {
+            taskTimelineNotice.classList.add('d-none');
+        }
+        validateWorkerAssignment();
+    });
+
+    // 2. When Worker Selection Changes:
+    workerSelect.addEventListener('change', function() {
+        const workerId = parseInt(this.value);
+        const bookings = workerBookings[workerId] || [];
+
+        if (!this.value) {
+            workerScheduleInfo.innerHTML = '<div class="form-text">Select a worker to inspect their current task commitments and availability.</div>';
+            validateWorkerAssignment();
+            updateLaborCost();
+            return;
+        }
+
+        if (bookings.length === 0) {
+            workerScheduleInfo.innerHTML = `
+                <div class="alert alert-success py-2 px-3 small mb-0 d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill text-success fs-5 me-2"></i>
+                    <div>
+                        <strong>Fully Available</strong><br>
+                        <span class="text-muted">No active or upcoming task assignments. Ready for immediate deployment.</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            let bookingItems = bookings.map(b => 
+                `<li><strong>${b.start_fmt} &ndash; ${b.end_fmt}</strong>: ${b.project_name} (${b.task_name}) <span class="badge bg-secondary ms-1">${b.task_status}</span></li>`
+            ).join('');
+            
+            workerScheduleInfo.innerHTML = `
+                <div class="alert alert-warning py-2 px-3 small mb-0">
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="bi bi-calendar-x-fill text-warning fs-5 me-2"></i>
+                        <strong class="text-dark">Current Active Task Commitments:</strong>
+                    </div>
+                    <ul class="mb-1 ps-3" style="font-size: 0.82rem;">${bookingItems}</ul>
+                    <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Worker is available outside these commitment dates.</small>
+                </div>
+            `;
+        }
+        validateWorkerAssignment();
+        updateLaborCost();
+    });
+
+    // 3. When Hours Input Changes:
+    if (hoursInput) {
+        hoursInput.addEventListener('input', updateLaborCost);
+    }
+
+    function updateLaborCost() {
+        if (!hoursInput || !laborCostPreview) return;
+        const workerId = parseInt(workerSelect.value);
+        const hours = parseFloat(hoursInput.value);
+
+        if (workerId && workerRates[workerId] && hours && hours > 0) {
+            const dailyRate = workerRates[workerId];
+            const workDays = hours / 8.0;
+            const totalCost = workDays * dailyRate;
+            laborCostPreview.classList.remove('d-none');
+            laborCostPreviewText.textContent = `Estimated Labor Cost: ₹${totalCost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${workDays.toFixed(1)} work days @ ₹${dailyRate.toLocaleString('en-IN')}/day)`;
+        } else {
+            laborCostPreview.classList.add('d-none');
+        }
+    }
+
+    // 4. Real-time Conflict Validation
+    function validateWorkerAssignment() {
+        const taskId = parseInt(taskSelect.value);
+        const workerId = parseInt(workerSelect.value);
+
+        conflictAlert.classList.add('d-none');
+        clearNotice.classList.add('d-none');
+        workerSelect.classList.remove('is-invalid', 'is-valid');
+        if (submitBtn) submitBtn.disabled = false;
+
+        if (!taskId || !workerId) {
+            return;
+        }
+
+        const task = projectTasks.find(t => t.id === taskId);
+        const bookings = workerBookings[workerId] || [];
+
+        // Check A: Duplicate check (already on this task)
+        const duplicate = bookings.find(b => b.project_task_id === taskId);
+        if (duplicate) {
+            conflictAlert.classList.remove('d-none');
+            conflictTitle.textContent = "Worker Already Assigned!";
+            conflictAlertText.innerHTML = `This worker is already assigned to this exact project task. A worker cannot be assigned to the same task multiple times.`;
+            workerSelect.classList.add('is-invalid');
+            if (submitBtn) submitBtn.disabled = true;
+            return;
+        }
+
+        // Check B: Schedule overlap check against other active tasks
+        if (task && task.start && task.end) {
+            let collision = null;
+            for (const b of bookings) {
+                if (b.project_task_id === taskId) continue;
+                if (b.start && b.end) {
+                    // Standard date range overlap: start_a <= end_b AND end_a >= start_b
+                    if (task.start <= b.end && task.end >= b.start) {
+                        collision = b;
+                        break;
+                    }
+                }
+            }
+
+            if (collision) {
+                conflictAlert.classList.remove('d-none');
+                conflictTitle.textContent = "Schedule Collision Detected!";
+                conflictAlertText.innerHTML = `
+                    This worker is already assigned to <strong>${collision.task_name}</strong> on <strong>${collision.project_name}</strong>
+                    from <strong>${collision.start_fmt}</strong> to <strong>${collision.end_fmt}</strong>.<br>
+                    Their active commitment overlaps with this task's window (<strong>${task.start_fmt}</strong> to <strong>${task.end_fmt}</strong>).
+                    Please choose an available worker or adjust task dates.
+                `;
+                workerSelect.classList.add('is-invalid');
+                if (submitBtn) submitBtn.disabled = true;
+                return;
+            }
+
+            clearNotice.classList.remove('d-none');
+            clearNoticeText.textContent = `Schedule Clear! Worker has no conflicting assignments during this task (${task.start_fmt} to ${task.end_fmt}).`;
+            workerSelect.classList.add('is-valid');
+            if (submitBtn) submitBtn.disabled = false;
+        } else {
+            clearNotice.classList.remove('d-none');
+            clearNoticeText.textContent = `Clear to assign! Worker has no duplicate assignment on this task.`;
+            workerSelect.classList.add('is-valid');
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    // 5. Handle URL Query Param: ?task_id=...
+    const urlParams = new URLSearchParams(window.location.search);
+    const preselectTaskId = urlParams.get('task_id');
+    if (preselectTaskId && taskSelect.querySelector(`option[value="${preselectTaskId}"]`)) {
+        openAssignModalForTask(preselectTaskId);
+    }
+
+    // 6. Interactive Instant Table Search & Filter
+    const searchInput = document.getElementById('workerSearchInput');
+    const taskFilter = document.getElementById('taskFilterSelect');
+    const tableRows = document.querySelectorAll('.worker-assignment-row');
+    const noMatchMsg = document.getElementById('noMatchMessage');
+
+    function filterTable() {
+        if (!tableRows.length) return;
+        const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+        const selectedTaskId = taskFilter ? taskFilter.value : 'all';
+        let visibleCount = 0;
+
+        tableRows.forEach(row => {
+            const rowTaskId = row.getAttribute('data-task-id');
+            const rowSearch = row.getAttribute('data-search-text') || '';
+            const matchesTask = (selectedTaskId === 'all' || rowTaskId === selectedTaskId);
+            const matchesQuery = (!query || rowSearch.includes(query));
+
+            if (matchesTask && matchesQuery) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        if (noMatchMsg) {
+            if (visibleCount === 0) {
+                noMatchMsg.classList.remove('d-none');
+            } else {
+                noMatchMsg.classList.add('d-none');
+            }
+        }
+    }
+
+    if (searchInput) searchInput.addEventListener('input', filterTable);
+    if (taskFilter) taskFilter.addEventListener('change', filterTable);
+});
+</script>
 {% endblock %}

@@ -285,17 +285,61 @@ def project_workers_tab(project_id):
         ORDER BY tt.task_name
     """), {'project_id': project_id}).fetchall()
 
-    # Eligible workers (status not On Leave or Inactive)
+    # Eligible workers (using worker_status_view to get live computed status)
     eligible_workers = db.session.execute(text("""
-        SELECT w.worker_id, w.name, w.role, w.skill, w.daily_rate, w.status
-        FROM workers w
-        WHERE w.status NOT IN ('On Leave', 'Inactive')
+        SELECT w.worker_id, w.name, w.role, w.skill, w.daily_rate, w.computed_status as status
+        FROM worker_status_view w
+        WHERE w.computed_status NOT IN ('On Leave', 'Inactive')
         ORDER BY w.name
     """)).fetchall()
 
     # Summary calculations
     total_labor_hours = sum(float(a.assigned_hours) for a in assignments)
     total_labor_cost = sum(float(a.total_cost) for a in assignments)
+
+    # Serialize active tasks for client-side schedule bounding
+    tasks_json = [
+        {
+            'id': pt.project_task_id,
+            'name': pt.task_name,
+            'start': pt.start_date.strftime('%Y-%m-%d') if pt.start_date else '',
+            'end': pt.due_date.strftime('%Y-%m-%d') if pt.due_date else '',
+            'start_fmt': pt.start_date.strftime('%d %b %Y') if pt.start_date else '',
+            'end_fmt': pt.due_date.strftime('%d %b %Y') if pt.due_date else ''
+        }
+        for pt in project_tasks
+    ]
+
+    # Query active worker bookings across company to empower live UI guidance
+    bookings_query = db.session.execute(text("""
+        SELECT tw.worker_id, tw.project_task_id, pt.start_date, pt.due_date,
+               p.project_name, p.project_id, tt.task_name, pt.status as task_status
+        FROM task_workers tw
+        JOIN project_tasks pt ON tw.project_task_id = pt.project_task_id
+        JOIN projects p ON pt.project_id = p.project_id
+        JOIN task_types tt ON pt.task_type_id = tt.task_type_id
+        WHERE pt.status IN ('In Progress', 'Not Started')
+        ORDER BY pt.start_date ASC
+    """)).fetchall()
+
+    bookings_by_worker = {}
+    for b in bookings_query:
+        w_id = b.worker_id
+        if w_id not in bookings_by_worker:
+            bookings_by_worker[w_id] = []
+        bookings_by_worker[w_id].append({
+            'project_task_id': b.project_task_id,
+            'project_id': b.project_id,
+            'project_name': b.project_name,
+            'task_name': b.task_name,
+            'task_status': b.task_status,
+            'start': b.start_date.strftime('%Y-%m-%d') if b.start_date else '',
+            'end': b.due_date.strftime('%Y-%m-%d') if b.due_date else '',
+            'start_fmt': b.start_date.strftime('%d %b %Y') if b.start_date else '',
+            'end_fmt': b.due_date.strftime('%d %b %Y') if b.due_date else 'Ongoing'
+        })
+
+    worker_rates = {w.worker_id: float(w.daily_rate) for w in eligible_workers}
 
     return render_template(
         'projects/workers.html',
@@ -305,7 +349,10 @@ def project_workers_tab(project_id):
         project_tasks=project_tasks,
         eligible_workers=eligible_workers,
         total_labor_hours=total_labor_hours,
-        total_labor_cost=total_labor_cost
+        total_labor_cost=total_labor_cost,
+        tasks_json=tasks_json,
+        bookings_json=bookings_by_worker,
+        worker_rates=worker_rates
     )
 
 

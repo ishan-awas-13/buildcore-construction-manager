@@ -360,6 +360,19 @@ document.addEventListener('DOMContentLoaded', function() {
             if (submitBtn) submitBtn.disabled = false;
         }
     }
+
+    // Handle URL Query Param: ?task_id=...
+    const urlParams = new URLSearchParams(window.location.search);
+    const preselectTaskId = urlParams.get('task_id');
+    if (preselectTaskId && taskSelect.querySelector(`option[value="${preselectTaskId}"]`)) {
+        taskSelect.value = preselectTaskId;
+        taskSelect.dispatchEvent(new Event('change'));
+        const modalEl = document.getElementById('addEquipmentModal');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+    }
 });
 </script>
 {% endblock %}
