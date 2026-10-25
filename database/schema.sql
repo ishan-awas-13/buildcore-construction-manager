@@ -251,7 +251,7 @@ SELECT
     p.project_id,
     p.purchase_date AS transaction_date,
     'Materials' AS category,
-    m.material_name || ' — ' || pi.quantity || ' ' || m.unit || ' @ ₹' || pi.unit_price AS description,
+    m.material_name || ' - ' || pi.quantity || ' ' || m.unit || ' @ ₹' || pi.unit_price AS description,
     ROUND(pi.quantity * pi.unit_price, 2) AS amount,
     'Purchase' AS source_type,
     p.purchase_id AS source_id
@@ -268,7 +268,7 @@ SELECT
     pt.project_id,
     pt.start_date AS transaction_date,
     'Labour' AS category,
-    w.name || ' — ' || tt.task_name || ' (' || tw.assigned_hours || ' hrs)' AS description,
+    w.name || ' - ' || tt.task_name || ' (' || tw.assigned_hours || ' hrs)' AS description,
     ROUND((tw.assigned_hours / 8.0) * tw.locked_daily_rate, 2) AS amount,
     'Labour' AS source_type,
     tw.task_worker_id AS source_id
@@ -285,7 +285,7 @@ SELECT
     pt.project_id,
     ea.start_date AS transaction_date,
     'Equipment' AS category,
-    eq.equipment_name || ' — ' || tt.task_name || ' (' || ea.hours_used || ' hrs)' AS description,
+    eq.equipment_name || ' - ' || tt.task_name || ' (' || ea.hours_used || ' hrs)' AS description,
     ROUND(ea.hours_used * ea.locked_hourly_rate, 2) AS amount,
     'Equipment' AS source_type,
     ea.assignment_id AS source_id
@@ -302,7 +302,7 @@ SELECT
     e.project_id,
     e.expense_date AS transaction_date,
     'Other' AS category,
-    e.expense_type || ' — ' || COALESCE(e.description, '') AS description,
+    e.expense_type || ' - ' || COALESCE(e.description, '') AS description,
     e.amount,
     'Misc Expense' AS source_type,
     e.expense_id AS source_id
