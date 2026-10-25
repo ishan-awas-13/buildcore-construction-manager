@@ -216,7 +216,10 @@ SELECT w.*,
         WHEN EXISTS (
             SELECT 1 FROM task_workers tw
             JOIN project_tasks pt ON tw.project_task_id = pt.project_task_id
-            WHERE tw.worker_id = w.worker_id AND pt.status IN ('In Progress', 'Not Started')
+            WHERE tw.worker_id = w.worker_id 
+              AND pt.status IN ('In Progress', 'Not Started')
+              AND pt.start_date <= CURRENT_DATE
+              AND (pt.due_date IS NULL OR pt.due_date >= CURRENT_DATE)
         ) THEN 'Assigned'
         ELSE 'Available'
     END AS computed_status
@@ -229,9 +232,13 @@ SELECT e.*,
         WHEN e.status IN ('Maintenance', 'Retired') THEN e.status
         WHEN EXISTS (
             SELECT 1 FROM equipment_assignments ea
+            JOIN project_tasks pt ON ea.project_task_id = pt.project_task_id
             WHERE ea.equipment_id = e.equipment_id
             AND ea.start_date <= CURRENT_DATE 
-            AND (ea.end_date IS NULL OR ea.end_date >= CURRENT_DATE)
+            AND (
+                (ea.end_date IS NOT NULL AND ea.end_date >= CURRENT_DATE)
+                OR (ea.end_date IS NULL AND pt.status != 'Completed' AND (pt.due_date IS NULL OR pt.due_date >= CURRENT_DATE))
+            )
         ) THEN 'In Use'
         ELSE 'Available'
     END AS computed_status

@@ -49,7 +49,15 @@
                 </div>
             </div>
         </div>
+    {% if project.status == 'Completed' %}
+    <div class="alert alert-secondary py-2 px-3 mb-3 d-flex align-items-center justify-content-between shadow-sm">
+        <div class="small">
+            <i class="bi bi-archive-fill me-2 text-secondary"></i>
+            <strong>Archived / Completed Project:</strong> All construction phases were finalized on {{ project.expected_end_date.strftime('%d %b %Y') if project.expected_end_date else 'Schedule' }}. Task workflows and resource deployments are locked for audit integrity.
+        </div>
+        <span class="badge bg-secondary"><i class="bi bi-lock me-1"></i>Read Only</span>
     </div>
+    {% endif %}
 
     <!-- Workspace Navigation Tabs -->
     <ul class="nav nav-tabs nav-fill mb-3">

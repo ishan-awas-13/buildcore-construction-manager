@@ -24,6 +24,39 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'login'
+    from datetime import date
+
+    @app.context_processor
+    def inject_today():
+        return {'today': date.today()}
+
+    # Automatic detection: auto-complete past tasks on startup
+    with app.app_context():
+        try:
+            db.session.execute(text("""
+                UPDATE project_tasks
+                SET status = 'Completed', completion_percentage = 100.00
+                WHERE due_date < CURRENT_DATE AND status != 'Completed';
+
+                UPDATE equipment_assignments ea
+                SET end_date = pt.due_date
+                FROM project_tasks pt
+                WHERE ea.project_task_id = pt.project_task_id
+                  AND ea.end_date IS NULL
+                  AND (pt.status = 'Completed' OR pt.due_date < CURRENT_DATE);
+
+                UPDATE projects p
+                SET status = 'Completed'
+                WHERE p.expected_end_date < CURRENT_DATE 
+                  AND p.status != 'Completed'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM project_tasks pt 
+                      WHERE pt.project_id = p.project_id AND pt.status != 'Completed'
+                  );
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
     @app.after_request
     def add_header(response):

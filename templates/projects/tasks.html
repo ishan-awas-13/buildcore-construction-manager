@@ -66,6 +66,11 @@
                             </a>
                         </td>
                         <td class="text-end">
+                            {% if t.status == 'Completed' or (t.due_date and t.due_date < today) or project.status == 'Completed' %}
+                            <span class="badge bg-light text-muted border py-1 px-2" title="Task Completed - Assignments finalized">
+                                <i class="bi bi-check2-circle text-success me-1"></i>Completed
+                            </span>
+                            {% else %}
                             <div class="btn-group btn-group-sm">
                                 <a href="{{ url_for('projects.project_workers_tab', project_id=project.project_id) }}?task_id={{ t.project_task_id }}" class="btn btn-outline-primary" title="Assign Worker to this Task">
                                     <i class="bi bi-person-plus me-1"></i>Worker
@@ -77,6 +82,7 @@
                                     <i class="bi bi-pencil"></i>
                                 </a>
                             </div>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

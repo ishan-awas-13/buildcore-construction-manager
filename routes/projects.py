@@ -276,12 +276,14 @@ def project_workers_tab(project_id):
         ORDER BY tt.task_name, w.name
     """), {'project_id': project_id}).fetchall()
 
-    # Eligible project tasks for assignment modal (active/not completed)
+    # Eligible project tasks for assignment modal (active/not completed, and ending today or in the future)
     project_tasks = db.session.execute(text("""
         SELECT pt.project_task_id, tt.task_name, pt.start_date, pt.due_date, pt.status
         FROM project_tasks pt
         JOIN task_types tt ON pt.task_type_id = tt.task_type_id
-        WHERE pt.project_id = :project_id AND pt.status != 'Completed'
+        WHERE pt.project_id = :project_id 
+          AND pt.status != 'Completed'
+          AND (pt.due_date IS NULL OR pt.due_date >= CURRENT_DATE)
         ORDER BY tt.task_name
     """), {'project_id': project_id}).fetchall()
 
@@ -319,6 +321,7 @@ def project_workers_tab(project_id):
         JOIN projects p ON pt.project_id = p.project_id
         JOIN task_types tt ON pt.task_type_id = tt.task_type_id
         WHERE pt.status IN ('In Progress', 'Not Started')
+          AND (pt.due_date IS NULL OR pt.due_date >= CURRENT_DATE)
         ORDER BY pt.start_date ASC
     """)).fetchall()
 
@@ -420,7 +423,9 @@ def project_equipment_tab(project_id):
         SELECT pt.project_task_id, tt.task_name, pt.start_date, pt.due_date, pt.status
         FROM project_tasks pt
         JOIN task_types tt ON pt.task_type_id = tt.task_type_id
-        WHERE pt.project_id = :project_id AND pt.status != 'Completed'
+        WHERE pt.project_id = :project_id 
+          AND pt.status != 'Completed'
+          AND (pt.due_date IS NULL OR pt.due_date >= CURRENT_DATE)
         ORDER BY tt.task_name
     """), {'project_id': project_id}).fetchall()
 
@@ -455,7 +460,7 @@ def project_equipment_tab(project_id):
         JOIN project_tasks pt ON ea.project_task_id = pt.project_task_id
         JOIN projects p ON pt.project_id = p.project_id
         JOIN task_types tt ON pt.task_type_id = tt.task_type_id
-        WHERE pt.status != 'Completed'
+        WHERE (pt.status != 'Completed' AND (pt.due_date IS NULL OR pt.due_date >= CURRENT_DATE))
            OR (ea.end_date IS NOT NULL AND ea.end_date >= CURRENT_DATE)
         ORDER BY ea.start_date ASC
     """)).fetchall()

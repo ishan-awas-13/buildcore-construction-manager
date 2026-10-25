@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import text
 from extensions import db
 
@@ -103,12 +103,21 @@ def validate_and_assign_worker(project_task_id, worker_id, assigned_hours_raw):
 
     # 3. Check for schedule conflicts with other active tasks
     target_task = db.session.execute(text("""
-        SELECT pt.project_task_id, pt.start_date, pt.due_date, tt.task_name, p.project_name
+        SELECT pt.project_task_id, pt.status, pt.start_date, pt.due_date, tt.task_name, p.project_name
         FROM project_tasks pt
         JOIN task_types tt ON pt.task_type_id = tt.task_type_id
         JOIN projects p ON pt.project_id = p.project_id
         WHERE pt.project_task_id = :pt_id
     """), {'pt_id': project_task_id}).fetchone()
+
+    if not target_task:
+        return False, "Target task not found.", False
+
+    if target_task.status == 'Completed':
+        return False, f"Cannot assign worker to '{target_task.task_name}': Task is already marked Completed.", False
+
+    if target_task.due_date and target_task.due_date < date.today():
+        return False, f"Cannot assign worker to '{target_task.task_name}': Task ended on {target_task.due_date.strftime('%d %b %Y')} and is in the past.", False
 
     if target_task and target_task.start_date and target_task.due_date:
         conflict = db.session.execute(text("""
@@ -174,6 +183,23 @@ def validate_and_assign_equipment(project_task_id, equipment_id, start_date_str,
 
     if ed and sd > ed:
         return False, "Start date cannot be after end date."
+
+    target_task = db.session.execute(text("""
+        SELECT pt.project_task_id, pt.status, pt.start_date, pt.due_date, tt.task_name, p.project_name
+        FROM project_tasks pt
+        JOIN task_types tt ON pt.task_type_id = tt.task_type_id
+        JOIN projects p ON pt.project_id = p.project_id
+        WHERE pt.project_task_id = :id
+    """), {'id': project_task_id}).fetchone()
+
+    if not target_task:
+        return False, "Target task not found."
+
+    if target_task.status == 'Completed':
+        return False, f"Cannot assign equipment to '{target_task.task_name}': Task is already marked Completed."
+
+    if target_task.due_date and target_task.due_date < date.today():
+        return False, f"Cannot assign equipment to '{target_task.task_name}': Task ended on {target_task.due_date.strftime('%d %b %Y')} and is in the past."
 
     equipment = db.session.execute(
         text("SELECT equipment_name, status, hourly_rate FROM equipment WHERE equipment_id = :id"),

@@ -31,11 +31,12 @@ def run_tests():
         print("\n[TEST 1] Testing Database Check Constraints on project_tasks...")
         
         # 1a: Completed with < 100% must be rejected by check_task_completion_status
+        completed_task_id = db.session.execute(text("SELECT project_task_id FROM project_tasks WHERE status = 'Completed' LIMIT 1")).scalar()
         try:
             db.session.execute(text("SAVEPOINT sp_test1a"))
             db.session.execute(text("""
-                UPDATE project_tasks SET completion_percentage = 75.00 WHERE project_task_id = 1
-            """))
+                UPDATE project_tasks SET completion_percentage = 75.00 WHERE project_task_id = :id
+            """), {'id': completed_task_id})
             db.session.commit()
             assert False, "Failed to reject status='Completed' with completion_percentage < 100!"
         except Exception as e:
@@ -43,11 +44,12 @@ def run_tests():
             print("  --> PASS: DB rejected 'Completed' status with 75% progress via constraint.")
 
         # 1b: In Progress with 100% must be rejected by check_task_completion_status
+        in_progress_task_id = db.session.execute(text("SELECT project_task_id FROM project_tasks WHERE status = 'In Progress' LIMIT 1")).scalar()
         try:
             db.session.execute(text("SAVEPOINT sp_test1b"))
             db.session.execute(text("""
-                UPDATE project_tasks SET completion_percentage = 100.00 WHERE project_task_id = 2
-            """))
+                UPDATE project_tasks SET completion_percentage = 100.00 WHERE project_task_id = :id
+            """), {'id': in_progress_task_id})
             db.session.commit()
             assert False, "Failed to reject status='In Progress' with completion_percentage = 100!"
         except Exception as e:
@@ -55,11 +57,12 @@ def run_tests():
             print("  --> PASS: DB rejected 'In Progress' status with 100% progress via constraint.")
 
         # 1c: Not Started with > 0% must be rejected by check_task_not_started_percentage
+        not_started_task_id = db.session.execute(text("SELECT project_task_id FROM project_tasks WHERE status = 'Not Started' LIMIT 1")).scalar()
         try:
             db.session.execute(text("SAVEPOINT sp_test1c"))
             db.session.execute(text("""
-                UPDATE project_tasks SET completion_percentage = 25.00 WHERE project_task_id = 3
-            """))
+                UPDATE project_tasks SET completion_percentage = 25.00 WHERE project_task_id = :id
+            """), {'id': not_started_task_id})
             db.session.commit()
             assert False, "Failed to reject status='Not Started' with completion_percentage > 0!"
         except Exception as e:

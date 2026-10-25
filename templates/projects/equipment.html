@@ -41,7 +41,7 @@
             <h5 class="mb-0 fw-bold"><i class="bi bi-truck text-warning me-2"></i>Assigned Project Equipment</h5>
             <small class="text-muted">Machinery and vehicles deployed to this project with snapshot hourly cost tracking.</small>
         </div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEquipmentModal">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEquipmentModal" {% if project.status == 'Completed' %}disabled title="Project is completed - assignments locked"{% endif %}>
             <i class="bi bi-plus-circle me-1"></i> Assign Equipment
         </button>
     </div>
@@ -159,7 +159,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-2">
                             <label for="eq_start_date" class="form-label fw-bold">Deployment Start Date <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="eq_start_date" name="start_date" required>
+                            <input type="date" class="form-control" id="eq_start_date" name="start_date" min="{{ today.strftime('%Y-%m-%d') }}" required>
                         </div>
                         <div class="col-md-6 mb-2">
                             <label for="eq_end_date" class="form-label fw-bold">End Date (Optional)</label>
@@ -238,23 +238,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (task && task.start && task.end) {
             taskTimelineNotice.classList.remove('d-none');
             taskTimelineText.textContent = `Task Duration: ${task.start_fmt} to ${task.end_fmt} (Dates constrained to task timeline)`;
-            startDateInput.min = task.start;
+            const todayStr = '{{ today.strftime("%Y-%m-%d") }}';
+            const effectiveMin = (task.start && task.start > todayStr) ? task.start : todayStr;
+            startDateInput.min = effectiveMin;
             startDateInput.max = task.end;
-            endDateInput.min = task.start;
+            endDateInput.min = effectiveMin;
             endDateInput.max = task.end;
             
             // Prefill with task boundaries if inputs are empty or outside task range
-            if (!startDateInput.value || startDateInput.value < task.start || startDateInput.value > task.end) {
-                startDateInput.value = task.start;
+            if (!startDateInput.value || startDateInput.value < effectiveMin || startDateInput.value > task.end) {
+                startDateInput.value = effectiveMin;
             }
-            if (!endDateInput.value || endDateInput.value < task.start || endDateInput.value > task.end) {
+            if (!endDateInput.value || endDateInput.value < effectiveMin || endDateInput.value > task.end) {
                 endDateInput.value = task.end;
             }
         } else {
             taskTimelineNotice.classList.add('d-none');
-            startDateInput.removeAttribute('min');
+            startDateInput.min = '{{ today.strftime("%Y-%m-%d") }}';
             startDateInput.removeAttribute('max');
-            endDateInput.removeAttribute('min');
+            endDateInput.min = '{{ today.strftime("%Y-%m-%d") }}';
             endDateInput.removeAttribute('max');
         }
         validateDates();
@@ -316,6 +318,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (submitBtn) submitBtn.disabled = false;
 
         if (!eqId || !userStart) {
+            return;
+        }
+
+        const todayStr = '{{ today.strftime("%Y-%m-%d") }}';
+        if (userStart < todayStr) {
+            conflictAlert.classList.remove('d-none');
+            conflictAlertText.textContent = `Deployment start date cannot be in the past (today is ${todayStr}).`;
+            startDateInput.classList.add('is-invalid');
+            if (submitBtn) submitBtn.disabled = true;
             return;
         }
 
