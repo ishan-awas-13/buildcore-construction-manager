@@ -378,9 +378,9 @@ def project_equipment_tab(project_id):
     """), {'project_id': project_id}).fetchall()
 
     eligible_equipment = db.session.execute(text("""
-        SELECT eq.equipment_id, eq.equipment_name, eq.equipment_type, eq.hourly_rate, eq.status
-        FROM equipment eq
-        WHERE eq.status NOT IN ('Maintenance', 'Retired')
+        SELECT eq.equipment_id, eq.equipment_name, eq.equipment_type, eq.hourly_rate, eq.computed_status as status
+        FROM equipment_status_view eq
+        WHERE eq.computed_status NOT IN ('Maintenance', 'Retired')
         ORDER BY eq.equipment_name
     """)).fetchall()
 

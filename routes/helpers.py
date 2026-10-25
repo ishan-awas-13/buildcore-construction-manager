@@ -189,18 +189,28 @@ def validate_and_assign_equipment(project_task_id, equipment_id, start_date_str,
     # Overlap Check
     if ed:
         overlap_sql = text("""
-            SELECT 1 FROM equipment_assignments
-            WHERE equipment_id = :eq_id
-              AND start_date <= :end_date
-              AND (end_date >= :start_date OR end_date IS NULL)
+            SELECT 1 FROM equipment_assignments ea
+            JOIN project_tasks pt ON ea.project_task_id = pt.project_task_id
+            WHERE ea.equipment_id = :eq_id
+              AND ea.start_date <= :end_date
+              AND (
+                  (ea.end_date IS NOT NULL AND ea.end_date >= :start_date)
+                  OR (ea.end_date IS NULL AND pt.status != 'Completed' AND (pt.due_date >= :start_date OR pt.due_date IS NULL))
+                  OR (ea.end_date IS NULL AND pt.status = 'Completed' AND pt.due_date >= :start_date)
+              )
             LIMIT 1
         """)
         overlap = db.session.execute(overlap_sql, {'eq_id': equipment_id, 'start_date': sd, 'end_date': ed}).fetchone()
     else:
         overlap_sql = text("""
-            SELECT 1 FROM equipment_assignments
-            WHERE equipment_id = :eq_id
-              AND (end_date >= :start_date OR end_date IS NULL)
+            SELECT 1 FROM equipment_assignments ea
+            JOIN project_tasks pt ON ea.project_task_id = pt.project_task_id
+            WHERE ea.equipment_id = :eq_id
+              AND (
+                  (ea.end_date IS NOT NULL AND ea.end_date >= :start_date)
+                  OR (ea.end_date IS NULL AND pt.status != 'Completed')
+                  OR (ea.end_date IS NULL AND pt.status = 'Completed' AND pt.due_date >= :start_date)
+              )
             LIMIT 1
         """)
         overlap = db.session.execute(overlap_sql, {'eq_id': equipment_id, 'start_date': sd}).fetchone()
