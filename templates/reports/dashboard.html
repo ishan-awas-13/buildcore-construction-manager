@@ -108,8 +108,11 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <div class="progress" style="height: 15px;">
-                                            <div class="progress-bar {% if task.completion_percentage == 100 %}bg-success{% endif %}" role="progressbar" style="width: {{ task.completion_percentage }}%;" aria-valuenow="{{ task.completion_percentage }}" aria-valuemin="0" aria-valuemax="100">{{ "{:.0f}".format(task.completion_percentage) }}%</div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 10px;">
+                                                <div class="progress-bar {% if task.completion_percentage == 100 %}bg-success{% endif %}" role="progressbar" style="width: {{ task.completion_percentage }}%;" aria-valuenow="{{ task.completion_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span class="progress-meter-val" style="min-width: 42px; font-weight: 700; color: #000000 !important; font-size: 0.85rem;">{{ "{:.0f}".format(task.completion_percentage) }}%</span>
                                         </div>
                                     </td>
                                 </tr>

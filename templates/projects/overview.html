@@ -105,7 +105,7 @@
 
                 <div class="mb-2 d-flex justify-content-between small">
                     <span class="text-muted">Budget Utilization</span>
-                    <span class="fw-bold">{{ "{:.1f}".format(budget_used_pct) }}%</span>
+                    <span class="fw-bold" style="color: #000000 !important; font-weight: 700;">{{ "{:.1f}".format(budget_used_pct) }}%</span>
                 </div>
                 <div class="progress" style="height: 22px;">
                     <div class="progress-bar {% if budget_used_pct > 90 %}bg-danger{% elif budget_used_pct > 75 %}bg-warning{% else %}bg-success{% endif %}" 
@@ -202,11 +202,13 @@
                             </span>
                         </td>
                         <td>
-                            <div class="progress" style="height: 18px;">
-                                <div class="progress-bar {% if t.completion_percentage == 100 %}bg-success{% endif %}" role="progressbar"
-                                    style="width: {{ t.completion_percentage }}%;" aria-valuenow="{{ t.completion_percentage }}" aria-valuemin="0" aria-valuemax="100">
-                                    {{ "{:.0f}".format(t.completion_percentage) }}%
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 10px;">
+                                    <div class="progress-bar {% if t.completion_percentage == 100 %}bg-success{% endif %}" role="progressbar"
+                                        style="width: {{ t.completion_percentage }}%;" aria-valuenow="{{ t.completion_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
                                 </div>
+                                <span class="progress-meter-val" style="min-width: 42px; font-weight: 700; color: #000000 !important; font-size: 0.85rem;">{{ "{:.0f}".format(t.completion_percentage) }}%</span>
                             </div>
                         </td>
                         <td class="text-end">

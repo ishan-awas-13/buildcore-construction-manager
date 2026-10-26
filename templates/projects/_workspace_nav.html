@@ -32,7 +32,7 @@
                     <div class="text-end d-none d-md-block" style="min-width: 160px;">
                         <div class="d-flex justify-content-between small text-muted mb-1">
                             <span>Overall Progress</span>
-                            <span class="fw-bold">{{ "{:.0f}".format(project.progress if project.progress is defined else 0) }}%</span>
+                            <span class="fw-bold" style="color: #000000 !important; font-weight: 700;">{{ "{:.0f}".format(project.progress if project.progress is defined else 0) }}%</span>
                         </div>
                         <div class="progress" style="height: 10px;">
                             <div class="progress-bar {% if project.progress == 100 %}bg-success{% endif %}" role="progressbar"

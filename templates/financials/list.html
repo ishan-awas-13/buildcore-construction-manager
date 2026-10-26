@@ -39,12 +39,14 @@
                             </span>
                         </td>
                         <td style="min-width: 180px;">
-                            <div class="progress" style="height: 22px;">
-                                <div class="progress-bar {% if pct > 90 %}bg-danger{% elif pct > 70 %}bg-warning{% else %}bg-success{% endif %}"
-                                     role="progressbar" style="width: {{ [pct, 100] | min }}%;"
-                                     aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
-                                    {{ "{:.0f}".format(pct) }}%
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 10px;">
+                                    <div class="progress-bar {% if pct > 90 %}bg-danger{% elif pct > 70 %}bg-warning{% else %}bg-success{% endif %}"
+                                         role="progressbar" style="width: {{ [pct, 100] | min }}%;"
+                                         aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
                                 </div>
+                                <span class="progress-meter-val" style="min-width: 42px; font-weight: 700; color: #000000 !important; font-size: 0.85rem;">{{ "{:.0f}".format(pct) }}%</span>
                             </div>
                         </td>
                         <td>

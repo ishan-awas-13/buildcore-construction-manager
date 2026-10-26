@@ -50,7 +50,7 @@
     <div class="card-body">
         <div class="d-flex justify-content-between mb-1">
             <small class="text-muted">Budget Utilization</small>
-            <small class="fw-bold">{{ "{:.1f}".format(budget_used_pct) }}%</small>
+            <small class="fw-bold" style="color: #000000 !important; font-weight: 700;">{{ "{:.1f}".format(budget_used_pct) }}%</small>
         </div>
         <div class="progress" style="height: 28px;">
             <div class="progress-bar {% if budget_used_pct > 90 %}bg-danger{% elif budget_used_pct > 70 %}bg-warning{% else %}bg-success{% endif %}"

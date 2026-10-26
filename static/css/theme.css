@@ -622,10 +622,26 @@ body {
 .table .progress-bar {
     border-radius: 999px;
     background: linear-gradient(90deg, #2563eb, #38bdf8);
+    font-size: 0 !important;
+    color: transparent !important;
+    text-indent: -9999px;
 }
 
 .table .progress-bar.bg-success {
     background: linear-gradient(90deg, #059669, #10b981) !important;
+}
+
+/* High-contrast black font for progress meters across the application */
+.progress-meter-val,
+.progress-val-text,
+.progress-label-dark {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    min-width: 42px;
+    display: inline-block;
+    text-align: right;
+    letter-spacing: -0.01em;
 }
 
 /* Table Footers */
