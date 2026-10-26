@@ -203,14 +203,26 @@ body {
 
 /* Sidebar Footer */
 .sidebar-footer {
-    padding: 14px 18px;
+    padding: 12px 18px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.12);
+    background: rgba(0, 0, 0, 0.14);
     font-size: 0.75rem;
     color: var(--sidebar-text-muted);
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.db-connection-text {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.45);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    letter-spacing: 0.02em;
+    transition: color 0.2s ease;
+}
+
+.db-connection-text:hover {
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .live-indicator {

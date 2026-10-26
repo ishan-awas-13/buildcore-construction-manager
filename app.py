@@ -27,8 +27,15 @@ def create_app():
     from datetime import date
 
     @app.context_processor
-    def inject_today():
-        return {'today': date.today()}
+    def inject_context():
+        try:
+            active_db = db.session.execute(text("SELECT current_database();")).scalar()
+        except Exception:
+            active_db = getattr(db.engine.url, 'database', None) or 'buildcore'
+        return {
+            'today': date.today(),
+            'connected_db': active_db
+        }
 
     # Automatic detection: auto-complete past tasks on startup
     with app.app_context():

@@ -83,10 +83,15 @@
                 </a>
             </nav>
 
-            <!-- Sidebar Footer with Live System Indicator -->
+            <!-- Sidebar Footer with Live System Indicator & PostgreSQL DB Name -->
             <div class="sidebar-footer">
-                <span class="live-indicator"><span class="live-dot"></span> System Live</span>
-                <small class="opacity-75">v2.4 Enterprise</small>
+                <div class="d-flex align-items-center justify-content-between w-100 mb-1">
+                    <span class="live-indicator"><span class="live-dot"></span> System Live</span>
+                    <small class="opacity-75">v2.4</small>
+                </div>
+                <div class="db-connection-text text-start text-truncate w-100" title="Connected PostgreSQL Database: {{ connected_db }}">
+                    <i class="bi bi-database me-1"></i>db: <span>{{ connected_db }}</span>
+                </div>
             </div>
         </aside>
         {% endif %}
@@ -145,6 +150,12 @@
             </main>
         </div>
     </div>
+
+    {% if not current_user.is_authenticated %}
+    <div class="position-fixed bottom-0 start-0 m-3 px-2 py-1 rounded small" style="color: rgba(100, 116, 139, 0.45); font-size: 0.72rem; font-family: monospace; z-index: 1000;" title="Connected PostgreSQL Database">
+        <i class="bi bi-database me-1"></i>db: {{ connected_db }}
+    </div>
+    {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     {% block scripts %}{% endblock %}
