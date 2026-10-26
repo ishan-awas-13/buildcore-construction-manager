@@ -7,135 +7,132 @@
     <link rel="icon" href="{{ url_for('static', filename='images/hard_hat_icon.png') }}" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .navbar-brand {
-            display: inline-flex;
-            align-items: center;
-            font-weight: bold;
-            color: #0d6efd !important;
-        }
-        .navbar-brand img {
-            width: 25px;
-            height: 25px;
-            object-fit: contain;
-            filter: invert(1);
-            margin-right: 0.5rem;
-        }
-        .sidebar {
-            height: calc(100vh - 56px);
-            position: sticky;
-            top: 56px;
-            background-color: #343a40;
-            padding-top: 1rem;
-        }
-        .sidebar a {
-            color: #adb5bd;
-            text-decoration: none;
-            padding: 10px 20px;
-            display: block;
-        }
-        .sidebar a:hover, .sidebar a.active {
-            color: #fff;
-            background-color: #495057;
-        }
-        .sidebar .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .sidebar .nav-link i {
-            flex: 0 0 1.1rem;
-            text-align: center;
-            font-size: 1rem;
-        }
-        .content {
-            padding: 20px;
+        /* Fallback & inline critical tokens */
+        :root {
+            --primary-blue: #2563eb;
+            --sidebar-bg: #1c2776;
+            --table-header-gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
         }
     </style>
     {% block styles %}{% endblock %}
 </head>
 <body>
-    
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">
-                <img src="{{ url_for('static', filename='images/hard_hat_icon.png') }}" alt="" aria-hidden="true">
-                <span>BuildCore DB</span>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <span class="nav-link text-light">Welcome, {{ current_user.username }}</span>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
-                        </li>
-                    {% endif %}
-                </ul>
+
+    <div class="{% if current_user.is_authenticated %}app-shell{% else %}unauth-wrapper{% endif %}">
+        {% if current_user.is_authenticated %}
+        <!-- Modern Royal Blue Sidebar with Brand Title at TOP -->
+        <aside class="app-sidebar sidebar">
+            <!-- Sidebar Brand Header -->
+            <div class="sidebar-brand">
+                <a href="/" class="brand-link">
+                    <div class="brand-icon-box">
+                        <img src="{{ url_for('static', filename='images/hard_hat_icon.png') }}" alt="BuildCore DB">
+                    </div>
+                    <div class="brand-info">
+                        <span class="brand-title">BuildCore DB</span>
+                        <span class="brand-tag">MANAGEMENT</span>
+                    </div>
+                </a>
             </div>
-        </div>
-    </nav>
 
-    <div class="container-fluid">
-        <div class="row">
-            {% if current_user.is_authenticated %}
-            <nav class="col-md-2 d-none d-md-block sidebar">
-                <div class="position-sticky">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'dashboard.index' or request.endpoint == 'index' %}active{% endif %}" href="/"><i class="bi bi-speedometer2" aria-hidden="true"></i><span>Dashboard</span></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('projects.') %}active{% endif %}" href="{{ url_for('projects.list_projects') }}"><i class="bi bi-kanban" aria-hidden="true"></i><span>Projects</span></a>
-                        </li>
+            <!-- Navigation Links -->
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">Main</div>
+                <a class="nav-link {% if request.endpoint == 'dashboard.index' or request.endpoint == 'index' %}active{% endif %}" href="/">
+                    <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a class="nav-link {% if request.endpoint and request.endpoint.startswith('projects.') %}active{% endif %}" href="{{ url_for('projects.list_projects') }}">
+                    <i class="bi bi-kanban" aria-hidden="true"></i>
+                    <span>Projects</span>
+                </a>
 
-                        <li class="nav-item mt-3 px-3 py-1 text-uppercase text-secondary small fw-bold" style="font-size: 0.72rem; letter-spacing: 0.08em;">
-                            Company Registers
-                        </li>
+                <div class="nav-section-title mt-2">Company Registers</div>
+                <a class="nav-link {% if request.endpoint and request.endpoint.startswith('workers.') %}active{% endif %}" href="{{ url_for('workers.list_workers') }}">
+                    <i class="bi bi-people" aria-hidden="true"></i>
+                    <span>Workers</span>
+                </a>
+                <a class="nav-link {% if request.endpoint and request.endpoint.startswith('equipment.') %}active{% endif %}" href="{{ url_for('equipment.list_equipment') }}">
+                    <i class="bi bi-truck" aria-hidden="true"></i>
+                    <span>Equipment</span>
+                </a>
+                <a class="nav-link {% if request.endpoint and request.endpoint.startswith('materials.') %}active{% endif %}" href="{{ url_for('materials.list_materials') }}">
+                    <i class="bi bi-box-seam" aria-hidden="true"></i>
+                    <span>Materials</span>
+                </a>
+                <a class="nav-link {% if request.endpoint and request.endpoint.startswith('tasks.') %}active{% endif %}" href="{{ url_for('tasks.list_tasks') }}">
+                    <i class="bi bi-list-task" aria-hidden="true"></i>
+                    <span>Task Types</span>
+                </a>
+                <a class="nav-link {% if request.endpoint and request.endpoint.startswith('suppliers.') %}active{% endif %}" href="{{ url_for('suppliers.list_suppliers') }}">
+                    <i class="bi bi-building" aria-hidden="true"></i>
+                    <span>Suppliers</span>
+                </a>
 
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('workers.') %}active{% endif %}" href="{{ url_for('workers.list_workers') }}"><i class="bi bi-people" aria-hidden="true"></i><span>Workers</span></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('equipment.') %}active{% endif %}" href="{{ url_for('equipment.list_equipment') }}"><i class="bi bi-truck" aria-hidden="true"></i><span>Equipment</span></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('materials.') %}active{% endif %}" href="{{ url_for('materials.list_materials') }}"><i class="bi bi-box-seam" aria-hidden="true"></i><span>Materials</span></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('tasks.') %}active{% endif %}" href="{{ url_for('tasks.list_tasks') }}"><i class="bi bi-list-task" aria-hidden="true"></i><span>Task Types</span></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('suppliers.') %}active{% endif %}" href="{{ url_for('suppliers.list_suppliers') }}"><i class="bi bi-building" aria-hidden="true"></i><span>Suppliers</span></a>
-                        </li>
-
-                        <li class="nav-item mt-3">
-                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('financials.') %}active{% endif %}" href="{{ url_for('financials.list_financials') }}"><i class="bi bi-cash-stack" aria-hidden="true"></i><span>Financials</span></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-warning {% if request.endpoint and request.endpoint.startswith('reports.') %}active{% endif %}" href="{{ url_for('reports.dashboard') }}">
-                                <i class="bi bi-bar-chart-line" aria-hidden="true"></i><span>Reports</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+                <div class="nav-section-title mt-2">Financials & Insights</div>
+                <a class="nav-link {% if request.endpoint and request.endpoint.startswith('financials.') %}active{% endif %}" href="{{ url_for('financials.list_financials') }}">
+                    <i class="bi bi-cash-stack" aria-hidden="true"></i>
+                    <span>Financials</span>
+                </a>
+                <a class="nav-link {% if request.endpoint and request.endpoint.startswith('reports.') %}active{% endif %}" href="{{ url_for('reports.dashboard') }}">
+                    <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                    <span>Reports</span>
+                </a>
             </nav>
-            <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4 content">
-            {% else %}
-            <main class="col-12 content">
+
+            <!-- Sidebar Footer with Live System Indicator -->
+            <div class="sidebar-footer">
+                <span class="live-indicator"><span class="live-dot"></span> System Live</span>
+                <small class="opacity-75">v2.4 Enterprise</small>
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- Main View Area -->
+        <div class="{% if current_user.is_authenticated %}app-main{% else %}container py-5{% endif %}">
+            {% if current_user.is_authenticated %}
+            <!-- Modern Refined Top Header Bar -->
+            <header class="app-topbar">
+                <div class="topbar-left">
+                    <span class="topbar-context-badge">
+                        <i class="bi bi-shield-check text-primary"></i> Senior Management Console
+                    </span>
+                </div>
+                <div class="topbar-right">
+                    <div class="date-pill">
+                        <i class="bi bi-calendar3"></i>
+                        <span>{{ today.strftime('%d %b %Y') if today else '26 Oct 2026' }}</span>
+                    </div>
+
+                    <!-- User Profile Chip with Avatar & Role -->
+                    <div class="user-profile-chip">
+                        <div class="user-avatar-circle">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <div class="user-text-meta">
+                            <span class="user-text-name">{{ current_user.username }}</span>
+                            <span class="user-text-role">Project Director</span>
+                        </div>
+                    </div>
+
+                    <!-- Refined Modern Logout Button -->
+                    <a href="{{ url_for('logout') }}" class="btn-refined-logout" title="Sign out of BuildCore">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </header>
             {% endif %}
 
+            <!-- Content Container -->
+            <main class="{% if current_user.is_authenticated %}app-content{% endif %} content">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                   {% if messages %}
                     {% for category, message in messages %}
-                      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                      <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
+                        <i class="bi {% if category == 'success' %}bi-check-circle-fill text-success{% elif category == 'danger' %}bi-exclamation-triangle-fill text-danger{% else %}bi-info-circle-fill text-primary{% endif %} me-2"></i>
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                       </div>
@@ -144,7 +141,6 @@
                 {% endwith %}
 
                 {% block content %}{% endblock %}
-
             </main>
         </div>
     </div>
