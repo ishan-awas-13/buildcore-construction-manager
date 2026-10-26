@@ -9,6 +9,7 @@ def convert_markdown_to_pdf():
     md_path = os.path.join(root_dir, 'BUILDCORE_ARCHITECTURE_AND_LEARNING_GUIDE.md')
     html_path = os.path.join(root_dir, 'scratch', 'guide_doc.html')
     pdf_path = os.path.join(root_dir, 'BuildCore_Architecture_and_Learning_Guide.pdf')
+    svg_path = os.path.join(root_dir, 'BuildCore_ER_Diagram.svg')
 
     if not os.path.exists(md_path):
         print(f"Error: {md_path} not found.")
@@ -17,13 +18,43 @@ def convert_markdown_to_pdf():
     with open(md_path, 'r', encoding='utf-8') as f:
         md_content = f.read()
 
-    # Pre-process Mermaid blocks so Mermaid.js can render them
-    # Replace ```mermaid ... ``` with <div class="mermaid"> ... </div>
+    # Read vector SVG
+    svg_content = ""
+    if os.path.exists(svg_path):
+        with open(svg_path, 'r', encoding='utf-8') as f:
+            svg_content = f.read()
+        # Ensure SVG scales responsively to container
+        svg_content = re.sub(r'width="\d+"\s+height="\d+"', 'width="100%" height="auto"', svg_content)
+
+    # 1. Replace the markdown image tag for BuildCore_ER_Diagram.png with the inline responsive SVG diagram
+    def replace_er_image(match):
+        return f"""
+<div class="er-diagram-container">
+    <div class="diagram-info-banner">
+        <div class="diagram-title">BuildCore Visual Entity-Relationship Architecture</div>
+        <div class="diagram-meta">15 Relational Tables &bull; CHECK Constraints &bull; Snapshot Rates &bull; 5 Automated PostgreSQL Views</div>
+        <div class="diagram-desc">Below is the complete normalized relational schema. Standalone presentation assets (<code>BuildCore_ER_Diagram.svg</code> vector and <code>BuildCore_ER_Diagram.png</code> 3200&times;2300 HD PNG) are available in the project root for drag-and-drop slide insertion into Microsoft PowerPoint and deep zooming.</div>
+    </div>
+    <div class="er-svg-wrapper">
+        {svg_content}
+    </div>
+</div>
+"""
+    processed_md = re.sub(r'!\[BuildCore Entity-Relationship Diagram\]\(BuildCore_ER_Diagram\.png\)', replace_er_image, md_content)
+
+    # 2. Replace mermaid block with clean, styled schema code card so it renders cleanly without client-side JS failure
     def replace_mermaid(match):
         code = match.group(1).strip()
-        return f'<div class="mermaid">\n{code}\n</div>'
-
-    processed_md = re.sub(r'```mermaid\s+(.*?)\s+```', replace_mermaid, md_content, flags=re.DOTALL)
+        return f"""
+<div class="mermaid-schema-card">
+    <div class="mermaid-schema-header">
+        <span class="badge">ERD Formal Specification</span>
+        <span>Mermaid / Relational Entities</span>
+    </div>
+    <pre><code>{code}</code></pre>
+</div>
+"""
+    processed_md = re.sub(r'```mermaid\s+(.*?)\s+```', replace_mermaid, processed_md, flags=re.DOTALL)
 
     # Convert to HTML with extensions
     html_body = markdown.markdown(
@@ -40,24 +71,10 @@ def convert_markdown_to_pdf():
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- Mermaid.js -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-    <script>
-        mermaid.initialize({{
-            startOnLoad: true,
-            theme: 'default',
-            themeVariables: {{
-                primaryColor: '#e0e7ff',
-                primaryBorderColor: '#3b82f6',
-                primaryTextColor: '#1e3a8a',
-                lineColor: '#2563eb'
-            }}
-        }});
-    </script>
     <style>
         @page {{
-            size: A4;
-            margin: 18mm 16mm 18mm 16mm;
+            size: A4 portrait;
+            margin: 16mm 14mm 16mm 14mm;
             @bottom-right {{
                 content: "Page " counter(page);
                 font-family: 'Inter', sans-serif;
@@ -236,16 +253,107 @@ def convert_markdown_to_pdf():
             font-weight: 500;
         }}
 
-        /* Mermaid Diagrams Container */
-        .mermaid {{
-            background-color: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 12px;
-            margin: 14px 0;
-            text-align: center;
+        /* Visual ER Diagram Styling */
+        .er-diagram-container {{
+            margin: 18px 0 24px 0;
+            padding: 14px;
+            background-color: #f8fafc;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
             break-inside: avoid;
             page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }}
+
+        .diagram-info-banner {{
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            border-radius: 0 4px 4px 0;
+            color: #1e3a8a;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }}
+
+        .diagram-title {{
+            font-size: 11pt;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 2px;
+        }}
+
+        .diagram-meta {{
+            font-size: 8.5pt;
+            font-weight: 600;
+            color: #2563eb;
+            margin-bottom: 4px;
+        }}
+
+        .diagram-desc {{
+            font-size: 8pt;
+            color: #475569;
+            line-height: 1.4;
+        }}
+
+        .er-svg-wrapper {{
+            width: 100%;
+            text-align: center;
+        }}
+
+        .er-svg-wrapper svg {{
+            width: 100% !important;
+            height: auto !important;
+            display: block;
+            margin: 0 auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background-color: #f8fafc;
+        }}
+
+        /* Mermaid Schema Syntax Card */
+        .mermaid-schema-card {{
+            background-color: #0f172a;
+            border-radius: 8px;
+            border: 1px solid #1e293b;
+            margin: 16px 0;
+            overflow: hidden;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }}
+
+        .mermaid-schema-header {{
+            background-color: #1e293b;
+            padding: 8px 14px;
+            color: #94a3b8;
+            font-size: 8pt;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+        }}
+
+        .mermaid-schema-header .badge {{
+            background-color: #2563eb;
+            color: #ffffff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 7.5pt;
+            font-weight: 700;
+        }}
+
+        .mermaid-schema-card pre {{
+            margin: 0;
+            padding: 12px 14px;
+            background: transparent;
+            border: none;
+            font-size: 7.5pt;
+            line-height: 1.4;
+            color: #e2e8f0;
         }}
 
         hr {{
@@ -283,6 +391,18 @@ def convert_markdown_to_pdf():
                 print-color-adjust: exact;
             }}
             blockquote {{
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }}
+            .er-diagram-container {{
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }}
+            .diagram-info-banner {{
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }}
+            .mermaid-schema-card {{
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }}

@@ -1,0 +1,363 @@
+import os
+
+def create_er_diagram_svg():
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    svg_path = os.path.join(root_dir, 'BuildCore_ER_Diagram.svg')
+
+    # Canvas dimensions
+    width = 1600
+    height = 1150
+
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}">
+  <defs>
+    <style>
+      .title {{ font-family: 'Segoe UI', Inter, system-ui, sans-serif; font-size: 26px; font-weight: 800; fill: #1e3a8a; }}
+      .subtitle {{ font-family: 'Segoe UI', Inter, system-ui, sans-serif; font-size: 14px; fill: #64748b; }}
+      .box {{ fill: #ffffff; stroke: #94a3b8; stroke-width: 1.5; rx: 8; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.06)); }}
+      .box-deprecated {{ fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 4 4; rx: 8; }}
+      .header {{ fill: url(#blueGradient); rx: 8; }}
+      .header-proc {{ fill: url(#greenGradient); rx: 8; }}
+      .header-dep {{ fill: #64748b; rx: 8; }}
+      .header-title {{ font-family: 'Segoe UI', Inter, system-ui, sans-serif; font-size: 13px; font-weight: 700; fill: #ffffff; }}
+      .attr {{ font-family: 'Consolas', 'JetBrains Mono', monospace; font-size: 10.5px; fill: #334155; }}
+      .badge-pk {{ font-family: 'Segoe UI', Inter, sans-serif; font-size: 9px; font-weight: 700; fill: #dc2626; }}
+      .badge-fk {{ font-family: 'Segoe UI', Inter, sans-serif; font-size: 9px; font-weight: 700; fill: #2563eb; }}
+      .badge-uk {{ font-family: 'Segoe UI', Inter, sans-serif; font-size: 9px; font-weight: 700; fill: #059669; }}
+      .badge-annot {{ font-family: 'Segoe UI', Inter, sans-serif; font-size: 8.5px; font-weight: 600; fill: #7c3aed; }}
+      .conn {{ fill: none; stroke: #3b82f6; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }}
+      .conn-dep {{ fill: none; stroke: #94a3b8; stroke-width: 1.4; stroke-dasharray: 4 4; }}
+      .legend {{ font-family: 'Segoe UI', Inter, sans-serif; font-size: 11px; fill: #475569; }}
+    </style>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#065f46" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c1d95" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+    <marker id="dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4">
+      <circle cx="5" cy="5" r="4" fill="#3b82f6" />
+    </marker>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#3b82f6" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#f8fafc" />
+
+  <!-- Diagram Title Banner -->
+  <text x="50" y="55" class="title">BuildCore Infrastructure &mdash; Entity-Relationship Diagram (ERD)</text>
+  <text x="50" y="80" class="subtitle">Complete Normalized Relational Architecture | 15 Tables, CHECK Constraints &amp; Snapshot Pricing Rates</text>
+
+  <!-- Legend Box -->
+  <rect x="1180" y="30" width="370" height="65" fill="#ffffff" stroke="#cbd5e1" rx="6" />
+  <text x="1195" y="50" class="legend" font-weight="700">Legend &amp; Badges:</text>
+  <text x="1195" y="70" class="badge-pk">PK</text><text x="1215" y="70" class="legend">Primary Key</text>
+  <text x="1295" y="70" class="badge-fk">FK</text><text x="1315" y="70" class="legend">Foreign Key</text>
+  <text x="1395" y="70" class="badge-uk">UK</text><text x="1415" y="70" class="legend">Unique Key</text>
+  <text x="1490" y="70" class="badge-annot">SNAP</text>
+
+  <!-- =================================================================== -->
+  <!-- ROW 1: MASTER CATALOGS                                              -->
+  <!-- =================================================================== -->
+
+  <!-- USERS -->
+  <g transform="translate(50, 110)">
+    <rect width="210" height="110" class="box" />
+    <rect width="210" height="28" class="header" />
+    <text x="12" y="19" class="header-title">USERS (Authentication)</text>
+    <text x="12" y="48" class="badge-pk">PK</text><text x="35" y="48" class="attr">user_id : int (SERIAL)</text>
+    <text x="12" y="68" class="badge-uk">UK</text><text x="35" y="68" class="attr">username : varchar(100)</text>
+    <text x="35" y="88" class="attr">password_hash : varchar</text>
+  </g>
+
+  <!-- WORKERS -->
+  <g transform="translate(310, 110)">
+    <rect width="240" height="175" class="box" />
+    <rect width="240" height="28" class="header" />
+    <text x="12" y="19" class="header-title">WORKERS (Workforce Master)</text>
+    <text x="12" y="48" class="badge-pk">PK</text><text x="35" y="48" class="attr">worker_id : int (SERIAL)</text>
+    <text x="35" y="68" class="attr">name : varchar(255)</text>
+    <text x="35" y="88" class="attr">role : varchar(100)</text>
+    <text x="35" y="108" class="attr">skill : varchar(100)</text>
+    <text x="35" y="128" class="attr">daily_rate : numeric &gt;= 0</text>
+    <text x="35" y="148" class="attr">status : varchar [Avail|Leave]</text>
+  </g>
+
+  <!-- EQUIPMENT -->
+  <g transform="translate(590, 110)">
+    <rect width="240" height="155" class="box" />
+    <rect width="240" height="28" class="header" />
+    <text x="12" y="19" class="header-title">EQUIPMENT (Machinery)</text>
+    <text x="12" y="48" class="badge-pk">PK</text><text x="35" y="48" class="attr">equipment_id : int (SERIAL)</text>
+    <text x="35" y="68" class="attr">equipment_name : varchar</text>
+    <text x="35" y="88" class="attr">equipment_type : varchar</text>
+    <text x="35" y="108" class="attr">hourly_rate : numeric &gt;= 0</text>
+    <text x="35" y="128" class="attr">status : varchar [Avail|Maint]</text>
+  </g>
+
+  <!-- MATERIALS -->
+  <g transform="translate(870, 110)">
+    <rect width="220" height="135" class="box" />
+    <rect width="220" height="28" class="header" />
+    <text x="12" y="19" class="header-title">MATERIALS (Supplies)</text>
+    <text x="12" y="48" class="badge-pk">PK</text><text x="35" y="48" class="attr">material_id : int (SERIAL)</text>
+    <text x="35" y="68" class="attr">material_name : varchar</text>
+    <text x="35" y="88" class="attr">unit : varchar (bag, ton)</text>
+    <text x="35" y="108" class="attr">unit_cost : numeric &gt;= 0</text>
+  </g>
+
+  <!-- SUPPLIERS -->
+  <g transform="translate(1130, 110)">
+    <rect width="220" height="155" class="box" />
+    <rect width="220" height="28" class="header" />
+    <text x="12" y="19" class="header-title">SUPPLIERS (Vendor Master)</text>
+    <text x="12" y="48" class="badge-pk">PK</text><text x="35" y="48" class="attr">supplier_id : int (SERIAL)</text>
+    <text x="35" y="68" class="attr">supplier_name : varchar</text>
+    <text x="35" y="88" class="attr">contact_person : varchar</text>
+    <text x="35" y="108" class="attr">phone : varchar(20)</text>
+    <text x="35" y="128" class="attr">email : varchar(255)</text>
+  </g>
+
+  <!-- TASK_TYPES -->
+  <g transform="translate(1390, 110)">
+    <rect width="180" height="110" class="box" />
+    <rect width="180" height="28" class="header" />
+    <text x="12" y="19" class="header-title">TASK_TYPES (Catalog)</text>
+    <text x="12" y="48" class="badge-pk">PK</text><text x="35" y="48" class="attr">task_type_id : int</text>
+    <text x="12" y="68" class="badge-uk">UK</text><text x="35" y="68" class="attr">task_name : varchar</text>
+    <text x="35" y="88" class="attr">description : text</text>
+  </g>
+
+
+  <!-- =================================================================== -->
+  <!-- ROW 2: CORE PROJECTS & PRIMARY INTERFACES                           -->
+  <!-- =================================================================== -->
+
+  <!-- PROJECTS (Core Hub) -->
+  <g transform="translate(50, 360)">
+    <rect width="270" height="240" class="box" stroke="#2563eb" stroke-width="2.5" />
+    <rect width="270" height="30" fill="url(#purpleGradient)" rx="8" />
+    <text x="12" y="20" class="header-title" font-size="14px">PROJECTS (Central Hub)</text>
+    <text x="12" y="52" class="badge-pk">PK</text><text x="35" y="52" class="attr" font-weight="700">project_id : int (SERIAL)</text>
+    <text x="35" y="74" class="attr">project_name : varchar(255)</text>
+    <text x="35" y="94" class="attr">project_type : varchar(100)</text>
+    <text x="35" y="114" class="attr">client_name : varchar(255)</text>
+    <text x="35" y="134" class="attr">location : text</text>
+    <text x="35" y="154" class="attr">start_date : date</text>
+    <text x="35" y="174" class="attr">expected_end_date : date</text>
+    <text x="35" y="194" class="attr">budget : numeric &gt;= 0</text>
+    <text x="35" y="214" class="attr">status : varchar [Active|Done]</text>
+  </g>
+
+  <!-- PROJECT_TASKS -->
+  <g transform="translate(420, 360)">
+    <rect width="270" height="210" class="box" stroke="#2563eb" stroke-width="2" />
+    <rect width="270" height="30" class="header" />
+    <text x="12" y="20" class="header-title">PROJECT_TASKS (WBS Packages)</text>
+    <text x="12" y="52" class="badge-pk">PK</text><text x="35" y="52" class="attr">project_task_id : int</text>
+    <text x="12" y="74" class="badge-fk">FK</text><text x="35" y="74" class="attr">project_id &rarr; PROJECTS</text>
+    <text x="12" y="94" class="badge-fk">FK</text><text x="35" y="94" class="attr">task_type_id &rarr; TASK_TYPES</text>
+    <text x="35" y="114" class="attr">start_date : date</text>
+    <text x="35" y="134" class="attr">due_date : date (&gt;= start)</text>
+    <text x="35" y="154" class="attr">status : varchar [In Prog|Done]</text>
+    <text x="35" y="174" class="attr">completion_percentage : 0-100</text>
+    <text x="12" y="194" class="badge-annot">CHECK</text><text x="45" y="194" class="attr" font-size="9.5px">pct=100 &hArr; status='Completed'</text>
+  </g>
+
+  <!-- MATERIAL_USAGE (Project Inventory Isolation) -->
+  <g transform="translate(790, 360)">
+    <rect width="250" height="165" class="box" />
+    <rect width="250" height="30" class="header" />
+    <text x="12" y="20" class="header-title">MATERIAL_USAGE (Project Stock)</text>
+    <text x="12" y="52" class="badge-pk">PK</text><text x="35" y="52" class="attr">usage_id : int (SERIAL)</text>
+    <text x="12" y="74" class="badge-fk">FK</text><text x="35" y="74" class="attr">project_id &rarr; PROJECTS</text>
+    <text x="12" y="94" class="badge-fk">FK</text><text x="35" y="94" class="attr">material_id &rarr; MATERIALS</text>
+    <text x="35" y="114" class="attr">quantity_allocated : numeric &gt;= 0</text>
+    <text x="35" y="134" class="attr">quantity_used : numeric &gt;= 0</text>
+    <text x="12" y="154" class="badge-annot">CHECK</text><text x="45" y="154" class="attr">quantity_used &le; allocated</text>
+  </g>
+
+  <!-- PURCHASES (Procurement Pipeline) -->
+  <g transform="translate(1120, 360)">
+    <rect width="240" height="150" class="box" stroke="#059669" stroke-width="2" />
+    <rect width="240" height="30" class="header-proc" />
+    <text x="12" y="20" class="header-title">PURCHASES (Purchase Orders)</text>
+    <text x="12" y="52" class="badge-pk">PK</text><text x="35" y="52" class="attr">purchase_id : int (SERIAL)</text>
+    <text x="12" y="74" class="badge-fk">FK</text><text x="35" y="74" class="attr">supplier_id &rarr; SUPPLIERS</text>
+    <text x="12" y="94" class="badge-fk">FK</text><text x="35" y="94" class="attr">project_id &rarr; PROJECTS</text>
+    <text x="35" y="114" class="attr">purchase_date : date</text>
+    <text x="35" y="134" class="attr">status : [Pending|Delivered]</text>
+  </g>
+
+
+  <!-- =================================================================== -->
+  <!-- ROW 3: TASK ASSIGNMENTS & DETAIL RECORDS                            -->
+  <!-- =================================================================== -->
+
+  <!-- TASK_WORKERS -->
+  <g transform="translate(340, 680)">
+    <rect width="250" height="155" class="box" stroke="#2563eb" />
+    <rect width="250" height="28" class="header" />
+    <text x="12" y="19" class="header-title">TASK_WORKERS (Labor Deployment)</text>
+    <text x="12" y="48" class="badge-pk">PK</text><text x="35" y="48" class="attr">task_worker_id : int (SERIAL)</text>
+    <text x="12" y="68" class="badge-fk">FK</text><text x="35" y="68" class="attr">project_task_id &rarr; TASKS</text>
+    <text x="12" y="88" class="badge-fk">FK</text><text x="35" y="88" class="attr">worker_id &rarr; WORKERS</text>
+    <text x="35" y="108" class="attr">assigned_hours : numeric &gt;= 0</text>
+    <text x="12" y="128" class="badge-annot">SNAP</text><text x="45" y="128" class="attr" font-weight="700">locked_daily_rate : numeric</text>
+    <text x="35" y="145" class="legend" font-size="9px">Cost = (hours/8) * locked_rate</text>
+  </g>
+
+  <!-- EQUIPMENT_ASSIGNMENTS -->
+  <g transform="translate(620, 680)">
+    <rect width="260" height="175" class="box" stroke="#2563eb" />
+    <rect width="260" height="28" class="header" />
+    <text x="12" y="19" class="header-title">EQUIPMENT_ASSIGNMENTS</text>
+    <text x="12" y="48" class="badge-pk">PK</text><text x="35" y="48" class="attr">assignment_id : int (SERIAL)</text>
+    <text x="12" y="68" class="badge-fk">FK</text><text x="35" y="68" class="attr">equipment_id &rarr; EQUIPMENT</text>
+    <text x="12" y="88" class="badge-fk">FK</text><text x="35" y="88" class="attr">project_task_id &rarr; TASKS</text>
+    <text x="35" y="108" class="attr">start_date, end_date : date</text>
+    <text x="35" y="128" class="attr">hours_used : numeric &gt;= 0</text>
+    <text x="12" y="148" class="badge-annot">SNAP</text><text x="45" y="148" class="attr" font-weight="700">locked_hourly_rate : numeric</text>
+    <text x="35" y="165" class="legend" font-size="9px">Cost = hours_used * locked_rate</text>
+  </g>
+
+  <!-- PURCHASE_ITEMS -->
+  <g transform="translate(1120, 680)">
+    <rect width="240" height="155" class="box" stroke="#059669" />
+    <rect width="240" height="28" class="header-proc" />
+    <text x="12" y="19" class="header-title">PURCHASE_ITEMS (Line Items)</text>
+    <text x="12" y="48" class="badge-pk">PK</text><text x="35" y="48" class="attr">purchase_item_id : int (SERIAL)</text>
+    <text x="12" y="68" class="badge-fk">FK</text><text x="35" y="68" class="attr">purchase_id &rarr; PURCHASES</text>
+    <text x="12" y="88" class="badge-fk">FK</text><text x="35" y="88" class="attr">material_id &rarr; MATERIALS</text>
+    <text x="35" y="108" class="attr">quantity : numeric &gt; 0</text>
+    <text x="35" y="128" class="attr">unit_price : numeric &gt;= 0</text>
+    <text x="35" y="145" class="legend" font-size="9px">Total = quantity * unit_price</text>
+  </g>
+
+  <!-- EXPENSES (Direct Overheads) -->
+  <g transform="translate(50, 680)">
+    <rect width="240" height="145" class="box" />
+    <rect width="240" height="28" class="header" />
+    <text x="12" y="19" class="header-title">EXPENSES (Direct Overheads)</text>
+    <text x="12" y="48" class="badge-pk">PK</text><text x="35" y="48" class="attr">expense_id : int (SERIAL)</text>
+    <text x="12" y="68" class="badge-fk">FK</text><text x="35" y="68" class="attr">project_id &rarr; PROJECTS</text>
+    <text x="35" y="88" class="attr">expense_type : varchar</text>
+    <text x="35" y="108" class="attr">amount : numeric &gt;= 0</text>
+    <text x="35" y="128" class="attr">expense_date : date</text>
+  </g>
+
+  <!-- PROJECT_WORKERS (Deprecated) -->
+  <g transform="translate(50, 920)">
+    <rect width="270" height="135" class="box-deprecated" />
+    <rect width="270" height="26" class="header-dep" />
+    <text x="12" y="18" class="header-title" font-size="11px">PROJECT_WORKERS [DEPRECATED]</text>
+    <text x="12" y="45" class="badge-pk">PK</text><text x="35" y="45" class="attr">project_worker_id : int</text>
+    <text x="12" y="65" class="badge-fk">FK</text><text x="35" y="65" class="attr">project_id, worker_id</text>
+    <text x="35" y="85" class="attr">assigned_date, release_date</text>
+    <text x="12" y="105" class="legend" font-size="9.5px">Preserved for catalog audit integrity.</text>
+    <text x="12" y="120" class="legend" font-size="9.5px">Active deployments run via TASK_WORKERS.</text>
+  </g>
+
+
+  <!-- =================================================================== -->
+  <!-- DYNAMIC SQL VIEWS ARCHITECTURE PANEL                                -->
+  <!-- =================================================================== -->
+  <g transform="translate(420, 920)">
+    <rect width="1120" height="175" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.8" rx="8" />
+    <rect width="1120" height="28" fill="#1e40af" rx="8" />
+    <text x="16" y="19" class="header-title" font-size="13px">5 DYNAMIC POSTGRESQL VIEWS (AUTOMATED STATE DERIVATION &amp; FINANCIAL INTEGRITY)</text>
+    
+    <text x="20" y="55" font-family="'Segoe UI', Inter, sans-serif" font-weight="700" fill="#1e3a8a" font-size="12px">1. worker_status_view</text>
+    <text x="20" y="73" class="attr" font-size="10px">Computes worker 'Assigned' vs 'Available' by dynamically checking if CURRENT_DATE falls in active task window.</text>
+    
+    <text x="20" y="100" font-family="'Segoe UI', Inter, sans-serif" font-weight="700" fill="#1e3a8a" font-size="12px">2. equipment_status_view</text>
+    <text x="20" y="118" class="attr" font-size="10px">Computes machinery 'In Use' vs 'Available' dynamically from ongoing equipment_assignments.</text>
+
+    <text x="400" y="55" font-family="'Segoe UI', Inter, sans-serif" font-weight="700" fill="#1e3a8a" font-size="12px">3. project_progress_view</text>
+    <text x="400" y="73" class="attr" font-size="10px">Calculates true duration-weighted completion percentage: &Sigma;(pct * duration_days) / &Sigma;(duration_days).</text>
+
+    <text x="400" y="100" font-family="'Segoe UI', Inter, sans-serif" font-weight="700" fill="#1e3a8a" font-size="12px">4. purchases_with_total_view</text>
+    <text x="400" y="118" class="attr" font-size="10px">Live aggregation of purchase line items calculating total PO value via SUM(quantity * unit_price).</text>
+
+    <text x="790" y="55" font-family="'Segoe UI', Inter, sans-serif" font-weight="700" fill="#047857" font-size="12px">5. expense_ledger_view (Unified Financial Ledger)</text>
+    <text x="790" y="73" class="attr" font-size="10px">Consolidates 4 cost streams via UNION ALL: Materials (Delivered POs), Labour (task_workers locked rates),</text>
+    <text x="790" y="90" class="attr" font-size="10px">Equipment (equipment_assignments locked rates), and Direct Expenses into an immutable audit ledger.</text>
+  </g>
+
+
+  <!-- =================================================================== -->
+  <!-- RELATIONSHIP CONNECTOR LINES                                        -->
+  <!-- =================================================================== -->
+
+  <!-- PROJECTS to PROJECT_TASKS -->
+  <path d="M 320 420 L 420 420" class="conn" marker-end="url(#arrow)" />
+  <circle cx="320" cy="420" r="3" fill="#2563eb" />
+
+  <!-- TASK_TYPES to PROJECT_TASKS -->
+  <path d="M 1480 220 L 1480 320 L 555 320 L 555 360" class="conn" marker-end="url(#arrow)" />
+  <circle cx="1480" cy="220" r="3" fill="#2563eb" />
+
+  <!-- PROJECT_TASKS to TASK_WORKERS -->
+  <path d="M 480 570 L 480 680" class="conn" marker-end="url(#arrow)" />
+  <circle cx="480" cy="570" r="3" fill="#2563eb" />
+
+  <!-- WORKERS to TASK_WORKERS -->
+  <path d="M 370 285 L 370 680" class="conn" marker-end="url(#arrow)" />
+  <circle cx="370" cy="285" r="3" fill="#2563eb" />
+
+  <!-- PROJECT_TASKS to EQUIPMENT_ASSIGNMENTS -->
+  <path d="M 640 570 L 640 680" class="conn" marker-end="url(#arrow)" />
+  <circle cx="640" cy="570" r="3" fill="#2563eb" />
+
+  <!-- EQUIPMENT to EQUIPMENT_ASSIGNMENTS -->
+  <path d="M 720 265 L 720 680" class="conn" marker-end="url(#arrow)" />
+  <circle cx="720" cy="265" r="3" fill="#2563eb" />
+
+  <!-- PROJECTS to MATERIAL_USAGE -->
+  <path d="M 320 460 L 790 460" class="conn" marker-end="url(#arrow)" />
+  <circle cx="320" cy="460" r="3" fill="#2563eb" />
+
+  <!-- MATERIALS to MATERIAL_USAGE -->
+  <path d="M 940 245 L 940 360" class="conn" marker-end="url(#arrow)" />
+  <circle cx="940" cy="245" r="3" fill="#2563eb" />
+
+  <!-- PROJECTS to PURCHASES -->
+  <path d="M 320 500 L 1120 500" class="conn" marker-end="url(#arrow)" />
+  <circle cx="320" cy="500" r="3" fill="#2563eb" />
+
+  <!-- SUPPLIERS to PURCHASES -->
+  <path d="M 1240 265 L 1240 360" class="conn" marker-end="url(#arrow)" />
+  <circle cx="1240" cy="265" r="3" fill="#2563eb" />
+
+  <!-- PURCHASES to PURCHASE_ITEMS -->
+  <path d="M 1240 510 L 1240 680" class="conn" marker-end="url(#arrow)" />
+  <circle cx="1240" cy="510" r="3" fill="#2563eb" />
+
+  <!-- MATERIALS to PURCHASE_ITEMS -->
+  <path d="M 990 245 L 990 640 L 1180 640 L 1180 680" class="conn" marker-end="url(#arrow)" />
+  <circle cx="990" cy="245" r="3" fill="#2563eb" />
+
+  <!-- PROJECTS to EXPENSES -->
+  <path d="M 170 600 L 170 680" class="conn" marker-end="url(#arrow)" />
+  <circle cx="170" cy="600" r="3" fill="#2563eb" />
+
+  <!-- PROJECTS to PROJECT_WORKERS (Deprecated) -->
+  <path d="M 120 600 L 120 920" class="conn-dep" marker-end="url(#arrow)" />
+
+</svg>"""
+
+    with open(svg_path, 'w', encoding='utf-8') as f:
+        f.write(svg)
+
+    print(f"SUCCESS: BuildCore_ER_Diagram.svg created ({len(svg)} bytes) at:\n{svg_path}")
+    return svg_path
+
+if __name__ == '__main__':
+    create_er_diagram_svg()

@@ -1,32 +1,94 @@
-# BuildCore Infrastructure & Resource Manager
+# BuildCore Infrastructure & Resource Governance Platform
 
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL_15+-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Flask](https://img.shields.io/badge/Framework-Flask_3.0-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Bootstrap](https://img.shields.io/badge/UI-Bootstrap_5.3_Royal_Blue-7952B3?style=for-the-badge&logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
-[![Tests](https://img.shields.io/badge/QA_Tests-100%25_Passing-059669?style=for-the-badge&logo=checkmarx&logoColor=white)](scratch/run_all_qa_tests.py)
-[![Architecture](https://img.shields.io/badge/Architecture-Project--First-2563eb?style=for-the-badge)](templates/projects/)
+[![Bootstrap](https://img.shields.io/badge/UI-Bootstrap_5.3_Royal_Blue-1e3a8a?style=for-the-badge&logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
+[![Tests](https://img.shields.io/badge/QA_Tests-100%25_Passing_(9_Suites)-059669?style=for-the-badge&logo=checkmarx&logoColor=white)](scratch/run_all_qa_tests.py)
+[![Architecture](https://img.shields.io/badge/Architecture-Project--First_Hub-2563eb?style=for-the-badge)](templates/projects/)
+[![Schema](https://img.shields.io/badge/Schema-15_Relational_Tables-7c3aed?style=for-the-badge)](BuildCore_ER_Diagram.svg)
 
-**BuildCore Infrastructure** is an enterprise-grade, web-based database management system designed specifically for civil engineering and construction resource governance. It replaces fragile, disconnected spreadsheets with a strictly normalized, dynamically computed PostgreSQL relational database accessed through a modern, responsive web application.
-
----
-
-## 🏗️ Architectural Overview (Project-First Paradigm)
-
-BuildCore organizes construction operations through a **Project-First Architecture**. In real-world engineering, equipment, labor, and materials do not exist in isolation—they operate in the context of specific projects and work breakdown tasks.
-
-The system features:
-- **Unified Project Workspaces**: Dedicated 7-tab command centers per project (**Overview, Tasks, Workers, Equipment, Materials, Purchases, Financials**).
-- **Automated Dynamic Status Calculation**: Resource availability for Workers and Equipment is calculated directly through PostgreSQL views (`worker_status_view`, `equipment_status_view`). It is mathematically impossible for resource states to become desynchronized or "stuck".
-- **Real-Time Collision Prevention**: Interactive scheduling intelligence that detects date overlaps across concurrent tasks and prevents double-booking.
-- **Snapshot Rate Financial Integrity**: Locks labor daily rates (`locked_daily_rate`) and equipment hourly rates (`locked_hourly_rate`) at assignment time to safeguard historical cost ledgers against future master-rate inflation.
-- **Master-Detail Procurement Pipeline**: Project-isolated purchasing (`purchases` & `purchase_items`) linking directly to project-level inventory (`material_usage`) and financial ledger tracking (`expense_ledger_view`).
-- **Database Engine Check Constraints**: Enforces business rules in the PostgreSQL kernel (e.g. task progress synchronization, date boundary validation, non-negative budget/rates, and material usage caps).
+> **BuildCore Infrastructure** is an enterprise-grade, web-based database management and resource governance platform engineered specifically for civil engineering, commercial construction, and infrastructure project operations. It transforms disconnected, error-prone spreadsheets into a strictly normalized, dynamically computed PostgreSQL relational database backed by an executive web application.
 
 ---
 
-## 📊 Complete Database Architecture (Entity-Relationship Diagram)
+## 🎯 Strategic Aim & Software Evolution
 
-The following Mermaid diagram illustrates the complete relational schema of the BuildCore database, detailing primary keys, foreign keys, junction tables, and relational cardinalities:
+Civil engineering projects routinely suffer from catastrophic cost overruns and scheduling delays caused by fragmented administrative tools. Generic project management software treats resources as abstract items, while basic database CRUD systems rely on vulnerable manual flags that quickly desynchronize from field operations.
+
+BuildCore was designed and evolved with a clear purpose: **to provide an unbreakable, mathematically consistent single source of truth for construction resource management, site procurement, and cost accounting.**
+
+```
++---------------------------------------------------------------------------------------------------+
+|                                  THE 5 CONSTRUCTION FAILURE MODES                                 |
++------------------------------------+--------------------------------------------------------------+
+| Traditional Vulnerability          | BuildCore Relational Solution                                |
++------------------------------------+--------------------------------------------------------------+
+| 1. Desynchronized Availability     | Zero stored state flags; worker & equipment availability     |
+|    (Workers marked 'Available'     | computed dynamically via SQL views from ongoing task dates.  |
+|    while deployed on active sites) |                                                              |
+| 2. Historical Cost Distortion      | Snapshot rate architecture locks daily & hourly rates at the |
+|    (Master labor/machine price     | exact moment of assignment; past projects never inflate.     |
+|    hikes alter old project ledger) |                                                              |
+| 3. Cross-Project Material Leakage  | Strict project-isolated inventory (material_usage) capped by |
+|    (One site consumes concrete     | kernel-level CHECK constraints (quantity_used <= allocated). |
+|    allocated to another project)   |                                                              |
+| 4. Fleet & Labor Over-Allocation   | Real-time temporal collision engine detects date overlaps    |
+|    (Double-booking heavy machinery)| and prevents scheduling conflicts across active projects.    |
+| 5. Skewed Milestone Metrics        | Duration-weighted progress view prevents short 1-day tasks   |
+|    (5-min tasks skewing 90-day     | from artificially inflating overall project completion.      |
+|    structural foundation metrics)  |                                                              |
++------------------------------------+--------------------------------------------------------------+
+```
+
+---
+
+## 🏗️ The 6 Core Architectural Pillars
+
+### 1. Project-First Command Center Paradigm
+In real-world construction, equipment, labor, and materials do not operate in isolation—they exist strictly within the context of specific engineering projects. BuildCore organizes all operations through a **Project-First Hub**. Each project possesses a unified 7-tab command center:
+1. **Overview**: Key metrics, high-contrast duration gauge, duration-weighted completion percentage, client/site metadata, and budget utilization.
+2. **Tasks (WBS)**: Work Breakdown Structure tracking standardized task types, start/due dates, percentage completion, and status.
+3. **Workers**: Certified workforce deployed to specific task activities with snapshot rate capture and active date tracking.
+4. **Equipment**: Heavy machinery allocations (excavators, cranes, mixers) with logged hours and locked hourly rates.
+5. **Materials**: Dedicated project-level inventory allocations ensuring zero inventory leakage across job sites.
+6. **Purchases**: Master-detail procurement pipeline tracking purchase orders from vendors directly to the site.
+7. **Financials**: Live 4-stream consolidated audit ledger combining materials, labor, machinery, and operational overheads.
+
+### 2. Mathematical State Derivation (Zero Desynchronization)
+BuildCore eliminates stored resource state flags. Instead of error-prone application-level updates (which fail during network interruptions, exceptions, or crashes), **resource availability is derived at query time by the PostgreSQL engine** via `worker_status_view` and `equipment_status_view`. If a worker's assigned task reaches its due date or is marked completed, their availability immediately shifts from `Assigned` to `Available` across the entire enterprise.
+
+### 3. Temporal Scheduling Intelligence & Collision Engine
+Physical assets cannot occupy two places simultaneously. BuildCore's collision detection engine analyzes requested assignment date ranges against all existing commitments across all concurrent projects, warning managers and blocking conflicting assignments before they reach the database.
+
+### 4. Immutable Snapshot Rate Accounting
+Master catalog prices change continuously due to market inflation, fuel costs, and revised union contracts. BuildCore preserves historical financial fidelity:
+- When a worker is assigned, their current `daily_rate` is copied into `task_workers.locked_daily_rate`.
+- When heavy equipment is deployed, its current `hourly_rate` is copied into `equipment_assignments.locked_hourly_rate`.
+- Even if a machine's master rate doubles next year, all past projects retain their original, audited costs.
+
+### 5. Accrual-Based Procurement & Site Inventory Isolation
+Procurement follows standard civil construction accounting rules:
+- Purchase orders created via `purchases` and `purchase_items` remain off the project expense ledger while in `Pending` or `Ordered` status.
+- Once marked `Delivered` or `Completed`, materials immediately populate site-level inventory (`material_usage`) and automatically accrue to the project expense ledger.
+- The PostgreSQL kernel enforces `CHECK (quantity_used <= quantity_allocated)`, making site over-consumption impossible.
+
+### 6. High-Visibility Executive UI & Ergonomics
+- **Royal Blue Enterprise Palette**: Cohesive, professional color hierarchy (`#1e3a8a`, `#2563eb`) paired with crisp elevation styling.
+- **High-Contrast Metrics**: Large numeric KPIs, progress meters, and financial ledgers styled in deep black (`#0f172a`) on pure white surfaces for maximum legibility in lecture halls and construction site trailers.
+- **Semantic Badging**: Instant visual distinction across operational states (Green: Available/Completed, Amber: In Progress/Assigned, Blue: Active/Ordered, Red: Maintenance/Leave).
+
+---
+
+## 📊 Complete Database Architecture & ER Diagram
+
+![BuildCore Entity-Relationship Diagram](BuildCore_ER_Diagram.png)
+
+> **Ready-to-Use Presentation & Slide Assets**:
+> - **PowerPoint Slide Image (3200 × 2300 Ultra-HD PNG)**: [`BuildCore_ER_Diagram.png`](BuildCore_ER_Diagram.png) &mdash; High-resolution asset optimized for slide decks and large screens.
+> - **Scalable Vector Graphic (Infinitely Zoomable SVG)**: [`BuildCore_ER_Diagram.svg`](BuildCore_ER_Diagram.svg) &mdash; Lossless vector format for printing or deep zoom inspection.
+> - **Technical Architecture & Learning Guide (PDF)**: [`BuildCore_Architecture_and_Learning_Guide.pdf`](BuildCore_Architecture_and_Learning_Guide.pdf) &mdash; 3.5 MB comprehensive PDF guide covering the complete schema, SQL views, and viva defense guide.
+
+### Formal Mermaid Schema Specification
 
 ```mermaid
 erDiagram
@@ -164,33 +226,35 @@ erDiagram
 
 ---
 
-## 📐 Relational Schema Specification
+## 📐 Relational Schema Specification (15 Tables)
 
-| Table | Primary Key | Foreign Keys | Key Constraints & Integrity Rules |
-| :--- | :--- | :--- | :--- |
-| **`users`** | `user_id` | *None* | `username` is UNIQUE; Password stored as secure Werkzeug salt/hash. |
-| **`projects`** | `project_id` | *None* | `CHECK (expected_end_date >= start_date)`, `CHECK (budget >= 0)`. |
-| **`workers`** | `worker_id` | *None* | `CHECK (daily_rate >= 0)`. Status: `Available`, `On Leave`, `Inactive`. |
-| **`equipment`** | `equipment_id` | *None* | `CHECK (hourly_rate >= 0)`. Status: `Available`, `Maintenance`, `Retired`. |
-| **`materials`** | `material_id` | *None* | `CHECK (unit_cost >= 0)`. |
-| **`suppliers`** | `supplier_id` | *None* | Vendor master repository with contact details. |
-| **`task_types`** | `task_type_id` | *None* | `task_name` is UNIQUE (reusable activity templates). |
-| **`project_tasks`** | `project_task_id` | `project_id` (CASCADE), `task_type_id` (RESTRICT) | `UNIQUE (project_id, task_type_id)`, `CHECK (due_date >= start_date)`, `CHECK (completion_percentage BETWEEN 0 AND 100)`. Task Consistency constraints: status `Completed` &harr; 100%, status `Not Started` &rarr; 0%. |
-| **`task_workers`** | `task_worker_id` | `project_task_id` (CASCADE), `worker_id` (CASCADE) | `CHECK (assigned_hours >= 0)`, `CHECK (locked_daily_rate >= 0)`. Snapshot rate captures labor rate at assignment time. |
-| **`equipment_assignments`** | `assignment_id` | `equipment_id` (CASCADE), `project_task_id` (CASCADE) | `CHECK (end_date IS NULL OR end_date >= start_date)`, `CHECK (hours_used >= 0)`, `CHECK (locked_hourly_rate >= 0)`. |
-| **`material_usage`** | `usage_id` | `project_id` (CASCADE), `material_id` (CASCADE) | `UNIQUE (project_id, material_id)`, `CHECK (quantity_used <= quantity_allocated)`, `CHECK (quantity_allocated >= 0)`. Enforces strict project material isolation. |
-| **`purchases`** | `purchase_id` | `supplier_id` (RESTRICT), `project_id` (CASCADE) | Master purchase record. Accrual recognition: materials become expenses upon `Delivered`/`Completed`. |
-| **`purchase_items`** | `purchase_item_id` | `purchase_id` (CASCADE), `material_id` (RESTRICT) | `CHECK (quantity > 0)`, `CHECK (unit_price >= 0)`. Line-item details. |
-| **`expenses`** | `expense_id` | `project_id` (CASCADE) | `CHECK (amount >= 0)`. Tracks miscellaneous/operational direct project overheads. |
-| **`project_workers`** | `project_worker_id` | `project_id` (CASCADE), `worker_id` (CASCADE) | **[DEPRECATED]** Legacy macro junction table preserved for PostgreSQL catalog audit trails. Active task assignments run on `task_workers`. |
+The database schema is partitioned into **4 logical tiers**:
+
+| Table | Primary Key | Foreign Keys | Key Constraints & Integrity Rules | Tier & Purpose |
+| :--- | :--- | :--- | :--- | :--- |
+| **`users`** | `user_id` | *None* | `username` is UNIQUE; Salted password hash via Werkzeug. | **Security**: Authentication & Session Governance. |
+| **`projects`** | `project_id` | *None* | `CHECK (expected_end_date >= start_date)`, `CHECK (budget >= 0)`. | **Core Hub**: Central project entity governing all child resources. |
+| **`workers`** | `worker_id` | *None* | `CHECK (daily_rate >= 0)`. Macro status: `Available`, `On Leave`, `Inactive`. | **Master Catalog**: Enterprise workforce repository. |
+| **`equipment`** | `equipment_id` | *None* | `CHECK (hourly_rate >= 0)`. Macro status: `Available`, `Maintenance`, `Retired`. | **Master Catalog**: Enterprise fleet & machinery repository. |
+| **`materials`** | `material_id` | *None* | `CHECK (unit_cost >= 0)`. Stores unit of measure (bags, tons, meters). | **Master Catalog**: Master construction supplies catalog. |
+| **`suppliers`** | `supplier_id` | *None* | Vendor master repository with contact person, phone, email, and address. | **Master Catalog**: Authorized vendor directory. |
+| **`task_types`** | `task_type_id` | *None* | `task_name` is UNIQUE (reusable standardized activity templates). | **Master Catalog**: Standard Work Breakdown dictionary. |
+| **`project_tasks`** | `project_task_id` | `project_id` (CASCADE), `task_type_id` (RESTRICT) | `UNIQUE (project_id, task_type_id)`, `CHECK (due_date >= start_date)`, `CHECK (completion_percentage BETWEEN 0 AND 100)`. Task consistency: `status = 'Completed' <-> 100%`, `status = 'Not Started' -> 0%`. | **WBS Instance**: Discrete engineering task packages. |
+| **`task_workers`** | `task_worker_id` | `project_task_id` (CASCADE), `worker_id` (CASCADE) | `CHECK (assigned_hours >= 0)`, `CHECK (locked_daily_rate >= 0)`. Snapshot rate captures labor rate at allocation moment. | **Junction Bridge**: Task labor deployments with snapshot pricing. |
+| **`equipment_assignments`** | `assignment_id` | `equipment_id` (CASCADE), `project_task_id` (CASCADE) | `CHECK (end_date IS NULL OR end_date >= start_date)`, `CHECK (hours_used >= 0)`, `CHECK (locked_hourly_rate >= 0)`. | **Junction Bridge**: Machinery usage logging with locked hourly rates. |
+| **`material_usage`** | `usage_id` | `project_id` (CASCADE), `material_id` (CASCADE) | `UNIQUE (project_id, material_id)`, `CHECK (quantity_used <= quantity_allocated)`, `CHECK (quantity_allocated >= 0)`. | **Junction Bridge**: Strict site-isolated inventory allocation. |
+| **`purchases`** | `purchase_id` | `supplier_id` (RESTRICT), `project_id` (CASCADE) | Master purchase record. Status: `Pending`, `Ordered`, `Delivered`, `Completed`. Accrual on `Delivered`/`Completed`. | **Procurement**: Purchase order headers linked to projects. |
+| **`purchase_items`** | `purchase_item_id` | `purchase_id` (CASCADE), `material_id` (RESTRICT) | `CHECK (quantity > 0)`, `CHECK (unit_price >= 0)`. Line-item details calculating item total: `quantity * unit_price`. | **Procurement**: Itemized purchase order line items. |
+| **`expenses`** | `expense_id` | `project_id` (CASCADE) | `CHECK (amount >= 0)`. Tracks operational, legal, permit, and miscellaneous direct site overheads. | **Financials**: Direct miscellaneous project expense records. |
+| **`project_workers`** | `project_worker_id` | `project_id` (CASCADE), `worker_id` (CASCADE) | **[DEPRECATED]** Legacy macro junction table preserved for PostgreSQL catalog audit integrity. Active deployments run via `task_workers`. | **Audit Archive**: Historical macro catalog audit trail. |
 
 ---
 
 ## ⚡ Dynamic SQL Views & Automated Business Logic
 
-Rather than relying on error-prone application-level flags, BuildCore delegates state derivation to **5 PostgreSQL Views**:
+BuildCore shifts complex business logic from fragile application code directly into **5 High-Performance PostgreSQL Views**:
 
-### 1. `worker_status_view` (Automated Worker Availability)
+### 1. `worker_status_view` (Automated Workforce Availability)
 ```sql
 CREATE OR REPLACE VIEW worker_status_view AS
 SELECT w.*,
@@ -207,7 +271,7 @@ SELECT w.*,
     END AS computed_status
 FROM workers w;
 ```
-*Guarantees a worker is only marked 'Assigned' when actively deployed to an ongoing task.*
+*Guarantees a worker is only marked 'Assigned' when actively deployed to an ongoing task whose date window encompasses today.*
 
 ### 2. `equipment_status_view` (Automated Equipment Allocation)
 ```sql
@@ -229,6 +293,7 @@ SELECT e.*,
     END AS computed_status
 FROM equipment e;
 ```
+*Computes machinery allocation state automatically from ongoing assignment intervals.*
 
 ### 3. `project_progress_view` (Duration-Weighted Project Progress)
 ```sql
@@ -246,9 +311,9 @@ FROM projects p
 LEFT JOIN project_tasks pt ON p.project_id = pt.project_id
 GROUP BY p.project_id;
 ```
-*Computes overall project progress weighted by task duration in days, preventing short 1-day tasks from distorting massive 6-month milestones.*
+*Calculates true duration-weighted project completion ($\sum(\text{pct} \times \text{days}) / \sum(\text{days})$), preventing minor short-duration tasks from skewing major structural engineering deliverables.*
 
-### 4. `purchases_with_total_view` (Live Procurement Totals)
+### 4. `purchases_with_total_view` (Live Procurement Valuation)
 ```sql
 CREATE OR REPLACE VIEW purchases_with_total_view AS
 SELECT 
@@ -258,36 +323,67 @@ FROM purchases p
 LEFT JOIN purchase_items pi ON p.purchase_id = pi.purchase_id
 GROUP BY p.purchase_id;
 ```
+*Aggregates line items in real time to calculate total purchase order value.*
 
 ### 5. `expense_ledger_view` (Unified 4-Stream Cost Ledger)
-Consolidates all project expenses into a single audit stream using `UNION ALL`:
-- **Materials**: `ROUND(quantity * unit_price, 2)` from `purchase_items` WHERE status IN ('Delivered', 'Completed').
-- **Labor**: `ROUND((assigned_hours / 8.0) * locked_daily_rate, 2)` from `task_workers`.
-- **Equipment**: `ROUND(hours_used * locked_hourly_rate, 2)` from `equipment_assignments`.
-- **Other**: Direct entries from `expenses`.
+Consolidates all project expenses into a single immutable audit stream using `UNION ALL`:
+- **Delivered Materials**: `ROUND(quantity * unit_price, 2)` from `purchase_items` WHERE `status IN ('Delivered', 'Completed')`.
+- **Deployed Labor**: `ROUND((assigned_hours / 8.0) * locked_daily_rate, 2)` from `task_workers`.
+- **Equipment Hours**: `ROUND(hours_used * locked_hourly_rate, 2)` from `equipment_assignments`.
+- **Direct Overheads**: Direct records from `expenses`.
 
 ---
 
-## 🛡️ Enterprise Data Integrity & Hardening Features
+## 🛡️ Enterprise Integrity & Hardening Features
 
-1. **Snapshot Rate Accounting**: Labor and machinery costs use immutable rates recorded at allocation time.
-2. **Project Material Isolation**: Material allocations are unique to projects (`uq_project_material`); inventory cannot leak across project boundaries.
-3. **Database Check Constraints**:
-   - `check_task_completion_status`: Tasks with 100% progress must be `Completed`; tasks `< 100%` cannot be marked `Completed`.
-   - `check_task_not_started_percentage`: `Not Started` tasks cannot have progress `> 0%`.
-4. **History Protection Guard**: Prevents accidental deletion of projects that carry active purchase orders or financial audit ledgers.
-5. **Real-Time Interactive Collision Alerts**: Modals warn users and block form submission if assigning a worker or machine to an overlapping task date window.
+1. **Snapshot Rate Protection**: Labor daily rates and machinery hourly rates are frozen at assignment creation, insulating project P&L from future catalog adjustments.
+2. **Strict Project Material Isolation**: Unique constraint `UNIQUE (project_id, material_id)` isolates site inventory; materials cannot be depleted across project boundaries.
+3. **Kernel-Enforced Consistency Constraints**:
+   - `check_task_completion_status`: Progress = 100% $\iff$ status is 'Completed'.
+   - `check_task_not_started_percentage`: Status = 'Not Started' $\implies$ progress must be 0%.
+   - `check_material_usage_limit`: `quantity_used <= quantity_allocated`.
+   - `check_dates`: Start date $\le$ Due/End date across projects, tasks, and machinery assignments.
+4. **History Protection Guard**: Prohibits deletion of projects that carry active purchase orders or financial audit records.
+5. **Interactive Collision Prevention Modals**: Form inputs validate overlapping date ranges against the database, alerting managers before conflicting records can be inserted.
+6. **Direct SQL Execution via `text()`**: BuildCore deliberately uses parameterized raw SQL queries (`db.session.execute(text(...))`), demonstrating mastery of SQL joins, CTEs, window functions, and transaction semantics while safeguarding against SQL injection.
 
 ---
 
-## 🚀 Local Installation & Execution
+## 🧪 Comprehensive QA Verification Suite
+
+BuildCore includes an automated test framework covering **9 adversarial validation modules** (`scratch/run_all_qa_tests.py`):
+
+```
+========================================================================================
+                          BUILDCORE QA VERIFICATION REPORT                              
+========================================================================================
+[PASS] 1. Material Allocation & Usage Isolation (uq_project_material, cap checks)
+[PASS] 2. Snapshot Rate Accounting & Unified Expense Ledger (locked rates, UNION ALL)
+[PASS] 3. Dynamic Availability Views (worker_status_view, equipment_status_view)
+[PASS] 4. Task Progress & Status Synchronization (100% <-> Completed, Not Started -> 0%)
+[PASS] 5. History Protection & Referential Integrity (RESTRICT on active POs)
+[PASS] 6. Enterprise Scale & Multi-Task Work Breakdown Load
+[PASS] 7. Security, Salted Authentication & SQL Injection Parameterization
+[PASS] 8. Duration-Weighted Progress Accuracy (project_progress_view)
+[PASS] 9. Project-First UI Route Introspection & Collision Modals
+========================================================================================
+RESULT: 100% TEST SUITE PASS RATE (0 FAILURES, 0 REGRESSIONS)
+========================================================================================
+```
+
+---
+
+## 🚀 Local Installation & Setup
 
 ### 1. Prerequisites
-- Python 3.10+
-- PostgreSQL 14+
+- **Python**: 3.10 or higher
+- **PostgreSQL**: 14 or higher
 
-### 2. Setup Virtual Environment
+### 2. Clone Repository & Setup Virtual Environment
 ```bash
+git clone https://github.com/ishan-awas-13/buildcore-construction-manager.git
+cd buildcore-construction-manager
+
 python -m venv venv
 # Windows:
 .\venv\Scripts\activate
@@ -300,31 +396,48 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Configure Environment
+### 4. Configure Environment Variables
 Create a `.env` file in the project root:
 ```env
 DB_USER=postgres
-DB_PASSWORD=your_password
+DB_PASSWORD=your_postgres_password
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_NAME=buildcore_copy
-SECRET_KEY=your_secret_key
+SECRET_KEY=your_secure_random_key
 ```
 
-### 5. Initialize Database & Seed
+### 5. Initialize Schema & Seed Data
 ```bash
 python setup_db.py
 flask create-admin
 ```
 
-### 6. Run Application
+### 6. Run the Application
 ```bash
 flask run --debug
 ```
 Access the application at `http://127.0.0.1:5000`.
 
-### 7. Run Comprehensive QA Test Suite
-Verify 100% adversarial test pass rate across all 9 modules:
+### 7. Run Test Verification Suite
 ```bash
 python scratch/run_all_qa_tests.py
 ```
+
+---
+
+## 🎓 Academic Defense & Presentation Resources
+
+For academic evaluations, project demonstrations, and viva defense:
+- **Presentation Walkthrough & Script**: [`FINAL_PRESENTATION_WALKTHROUGH.md`](FINAL_PRESENTATION_WALKTHROUGH.md) &mdash; Detailed step-by-step presentation script with split-screen parallel `psql` queries proving that UI actions immediately update the PostgreSQL backend (not cached in browser).
+- **Architecture & Learning Guide**: [`BUILDCORE_ARCHITECTURE_AND_LEARNING_GUIDE.md`](BUILDCORE_ARCHITECTURE_AND_LEARNING_GUIDE.md) &mdash; 50 KB complete technical and theoretical study guide covering normalization (1NF through BCNF), transaction isolation, indexing strategies, 12-slide PPT outline, and 15 viva questions with model answers.
+- **Publication PDF Guide**: [`BuildCore_Architecture_and_Learning_Guide.pdf`](BuildCore_Architecture_and_Learning_Guide.pdf) &mdash; Ready-to-study 3.5 MB compiled document featuring the embedded visual ER diagram.
+- **Presentation Slide Graphics**: [`BuildCore_ER_Diagram.png`](BuildCore_ER_Diagram.png) (3200×2300 4K PNG) and [`BuildCore_ER_Diagram.svg`](BuildCore_ER_Diagram.svg) (lossless vector).
+
+---
+
+## 👥 Contributors & Academic Context
+
+- **Course**: Database Systems (Semester 5)
+- **Project**: BuildCore Infrastructure & Construction Management System
+- **Repository**: [ishan-awas-13/buildcore-construction-manager](https://github.com/ishan-awas-13/buildcore-construction-manager)
