@@ -25,4 +25,6 @@ project-run.txt
 FINAL_PRESENTATION_WALKTHROUGH.md
 BUILDCORE_ARCHITECTURE_AND_LEARNING_GUIDE.md
 *.pdf
-scratch/guide_doc.html
+!BuildCore_IEEE_Report.pdf
+BuildCore_IEEE_Technical_Report*.docx
+scratch/
